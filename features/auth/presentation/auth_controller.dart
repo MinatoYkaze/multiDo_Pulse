@@ -29,7 +29,9 @@ class AuthController extends AsyncNotifier<UserPost?> {
 
   Future<void> signInWithGoogle() async {
     final user = await _repo.signInWithGoogle();
-    state = AsyncData(user);
+    if (user != null) {
+      state = AsyncData(user);
+    }
   }
 
   Future<void> signInWithSecretKey(String key) async {

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/models.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_endpoints.dart';
+import '../../../core/network/api_exception.dart';
 
 /// Personal tasks + subtasks (`/tasks/*`).
 ///
@@ -40,9 +41,15 @@ class TaskRepository {
       _api.delete<void>(Api.task(id), parse: (_) {});
 
   /// GET /tasks/{task_id}/subtasks
-  Future<List<SubtaskResponse>> subtasks(int taskId) =>
-      _api.get<List<SubtaskResponse>>(Api.subtasks(taskId),
+  Future<List<SubtaskResponse>> subtasks(int taskId) async {
+    try {
+      return await _api.get<List<SubtaskResponse>>(Api.subtasks(taskId),
           parse: (d) => ApiClient.list(d, SubtaskResponse.fromJson));
+    } on ApiException catch (e) {
+      if (e.statusCode == 404) return const [];
+      rethrow;
+    }
+  }
 
   /// POST /tasks/{task_id}/subtasks
   Future<SubtaskResponse?> addSubtask(int taskId, String title) =>

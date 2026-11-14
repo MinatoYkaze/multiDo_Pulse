@@ -21,6 +21,7 @@ final dioProvider = Provider<Dio>((ref) {
     receiveTimeout: const Duration(seconds: 30),
     contentType: Headers.jsonContentType,
     headers: {'Accept': 'application/json'},
+    extra: {'withCredentials': true},
   ));
 
   dio.interceptors.add(AuthInterceptor(

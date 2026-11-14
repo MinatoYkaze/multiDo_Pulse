@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/models/models.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_endpoints.dart';
@@ -29,7 +31,8 @@ class AuthRepository {
     if (await _tokens.isDevSession) {
       return devUser;
     }
-    if (!await _tokens.hasSession) return null;
+    // On web, cookies are stored in the browser directly; on mobile, tokens are in secure storage.
+    if (!kIsWeb && !await _tokens.hasSession) return null;
     try {
       return await fetchMe();
     } on ApiException catch (e) {
@@ -73,11 +76,19 @@ class AuthRepository {
     return fallback;
   }
 
-  /// Full Google OAuth round-trip through the system browser.
-  /// The backend must finish by redirecting to
-  /// `obsidiantodo://auth?access_token=…&refresh_token=…`
-  /// (or `?code=…&state=…`, which we exchange via GET /auth/google/callback).
-  Future<UserPost> signInWithGoogle() async {
+  /// Full Google OAuth round-trip through the browser.
+  /// On web: redirects current window to Google OAuth endpoint with current web origin.
+  /// On mobile: uses FlutterWebAuth2 with custom scheme redirect.
+  Future<UserPost?> signInWithGoogle() async {
+    if (kIsWeb) {
+      final origin = Uri.base.origin;
+      final uri = Uri.parse('${Api.baseUrl}${Api.googleLogin}').replace(queryParameters: {
+        'redirect_url': origin,
+      });
+      await launchUrl(uri, mode: LaunchMode.platformDefault, webOnlyWindowName: '_self');
+      return null;
+    }
+
     final url = await _resolveLoginUrl();
     final String result;
     try {

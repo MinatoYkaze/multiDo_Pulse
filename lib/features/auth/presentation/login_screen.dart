@@ -21,6 +21,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   int _secretTaps = 0;
   DateTime? _lastTapTime;
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final err = Uri.base.queryParameters['error'];
+      if (err != null && mounted) {
+        setState(() {
+          if (err == 'auth_failed') {
+            _error = 'Google authentication was cancelled or failed. Please try again.';
+          } else if (err == 'invalid_userinfo') {
+            _error = 'Unable to retrieve your Google profile. Please try again.';
+          } else {
+            _error = 'Sign-in error: $err';
+          }
+        });
+      }
+    });
+  }
+
   void _handleLogoTap() {
     final now = DateTime.now();
     if (_lastTapTime == null || now.difference(_lastTapTime!) > const Duration(seconds: 2)) {

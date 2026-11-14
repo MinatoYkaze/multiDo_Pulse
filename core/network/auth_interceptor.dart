@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'api_endpoints.dart';
 import 'token_storage.dart';
 
@@ -18,6 +19,7 @@ class AuthInterceptor extends QueuedInterceptor {
           connectTimeout: const Duration(seconds: 15),
           receiveTimeout: const Duration(seconds: 20),
           headers: {'Accept': 'application/json'},
+          extra: {'withCredentials': true},
         ));
 
   final TokenStorage tokens;
@@ -94,21 +96,28 @@ class AuthInterceptor extends QueuedInterceptor {
 
   Future<bool> _refresh() async {
     final rt = await tokens.refreshToken;
-    if (rt == null) return false;
+    if (!kIsWeb && rt == null) return false;
     try {
-      // Backend contract is inferred: refresh token sent in body AND as Bearer
-      // so either FastAPI style (body model or Depends(oauth2)) works.
-      final res = await _refreshDio.post<Map<String, dynamic>>(
+      final res = await _refreshDio.post<dynamic>(
         Api.refresh,
-        data: {'refresh_token': rt},
-        options: Options(headers: {'Authorization': 'Bearer $rt'}),
+        data: rt != null ? {'refresh_token': rt} : null,
+        options: Options(
+          headers: rt != null ? {'Authorization': 'Bearer $rt'} : null,
+          extra: {'withCredentials': true},
+        ),
       );
-      final data = res.data ?? const {};
-      final access = (data['access_token'] ?? data['token']) as String?;
-      if (access == null) return false;
-      await tokens.save(
-          access: access, refresh: data['refresh_token'] as String?);
-      return true;
+      if (res.statusCode != null && res.statusCode! >= 200 && res.statusCode! < 300) {
+        final data = res.data;
+        if (data is Map) {
+          final access = (data['access_token'] ?? data['token']) as String?;
+          if (access != null) {
+            await tokens.save(
+                access: access, refresh: data['refresh_token'] as String?);
+          }
+        }
+        return true;
+      }
+      return false;
     } on DioException {
       return false;
     }
