@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/models.dart';
 import '../../../core/theme/theme_controller.dart';
 import '../../auth/presentation/auth_controller.dart';
+import '../../analytics/data/activity_log.dart';
 import '../data/task_repository.dart';
 
 /// Ids completed during this session. Overdue tasks normally drop out of the
@@ -80,6 +81,9 @@ class TasksController extends AsyncNotifier<List<Tasks>> {
     if (i < 0) return;
     if (!list[i].isCompleted && next.isCompleted) {
       ref.read(sessionDoneIdsProvider.notifier).update((s) => {...s, next.id});
+      ref.read(activityLogProvider.notifier).logDone('t:${next.id}');
+    } else if (list[i].isCompleted && !next.isCompleted) {
+      ref.read(activityLogProvider.notifier).undo('t:${next.id}');
     }
     final copy = [...list]..[i] = next;
     state = AsyncData(copy);

@@ -259,8 +259,9 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 
 BoxDecoration _cardDeco(AppPalette p) => p.usesGlass
     ? BoxDecoration(
-        color: const Color(0xFF1A1B20),
+        color: p.isDark ? const Color(0xFF16181F) : const Color(0xFFFFFFFF),
         borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: p.border),
       )
     : AppDecor.card(p);
 
@@ -607,7 +608,9 @@ class _SubtaskRow extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(2, 0, 12, 0),
             decoration: BoxDecoration(
               color: p.usesGlass
-                  ? Color(done ? 0xB31F1F24 : 0xFF1F1F24)
+                  ? (p.isDark
+                      ? Color(done ? 0xB31F1F24 : 0xFF1F1F24)
+                      : Color(done ? 0xB3ECEFF3 : 0xFFF1F4F8))
                   : p.surface2.withValues(alpha: done ? 0.7 : 1),
               borderRadius: radius,
             ),

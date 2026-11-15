@@ -90,18 +90,24 @@ class _ConfirmDialog extends StatelessWidget {
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: p.usesGlass
-                        ? const Color(0xE616181F)
+                        ? (p.isDark
+                            ? const Color(0xE616181F)
+                            : const Color(0xF5FFFFFF))
                         : p.surface2,
                     borderRadius: radius,
                     border: Border.all(
                         color: p.usesGlass
-                            ? const Color(0x1AFFFFFF)
+                            ? (p.isDark
+                                ? const Color(0x1AFFFFFF)
+                                : const Color(0x1A000000))
                             : p.border),
-                    boxShadow: const [
+                    boxShadow: [
                       BoxShadow(
-                          color: Color(0xA6000000),
+                          color: p.isDark
+                              ? const Color(0xA6000000)
+                              : const Color(0x26000000),
                           blurRadius: 54,
-                          offset: Offset(0, 24)),
+                          offset: const Offset(0, 24)),
                     ],
                   ),
                   child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -160,7 +166,9 @@ class _ConfirmDialog extends StatelessWidget {
                         onPressed: () => Navigator.of(context).pop(false),
                         style: OutlinedButton.styleFrom(
                           backgroundColor: p.usesGlass
-                              ? const Color(0xCC232731)
+                              ? (p.isDark
+                                  ? const Color(0xCC232731)
+                                  : const Color(0xFFF1F3F6))
                               : Colors.transparent,
                           shape: RoundedRectangleBorder(
                               borderRadius:

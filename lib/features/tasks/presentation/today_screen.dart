@@ -317,7 +317,9 @@ class _Hero extends StatelessWidget {
         builder: (_, v, __) => Container(
           height: 6,
           decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.06),
+              color: p.isDark
+                  ? Colors.white.withValues(alpha: 0.06)
+                  : Colors.black.withValues(alpha: 0.06),
               borderRadius: BorderRadius.circular(999)),
           child: Align(
             alignment: Alignment.centerLeft,
@@ -367,17 +369,23 @@ class _Filters extends StatelessWidget {
               color: f == value
                   ? (p.isTerminal
                       ? p.accent.withValues(alpha: 0.12)
-                      : Colors.white.withValues(alpha: 0.10))
-                  : Colors.white.withValues(alpha: 0.04),
+                      : (p.isDark
+                          ? Colors.white.withValues(alpha: 0.10)
+                          : p.accent.withValues(alpha: 0.14)))
+                  : (p.isDark
+                      ? Colors.white.withValues(alpha: 0.04)
+                      : Colors.black.withValues(alpha: 0.04)),
               borderRadius: BorderRadius.circular(p.isTerminal ? 4 : 999),
               border: Border.all(
                   color: f == value && p.isTerminal
                       ? p.accent
-                      : Colors.transparent),
+                      : (f == value && !p.isDark ? p.accent.withValues(alpha: 0.3) : Colors.transparent)),
               boxShadow: f == value && !p.isTerminal
                   ? [
                       BoxShadow(
-                          color: Colors.white.withValues(alpha: 0.08),
+                          color: p.isDark
+                              ? Colors.white.withValues(alpha: 0.08)
+                              : p.accent.withValues(alpha: 0.15),
                           blurRadius: 12)
                     ]
                   : null,
@@ -386,7 +394,9 @@ class _Filters extends StatelessWidget {
                 style: t.labelLarge?.copyWith(
                     fontWeight: FontWeight.w500,
                     color: f == value
-                        ? (p.isTerminal ? p.accent : Colors.white)
+                        ? (p.isTerminal
+                            ? p.accent
+                            : (p.isDark ? Colors.white : p.accent))
                         : p.textMuted)),
           ),
         ),

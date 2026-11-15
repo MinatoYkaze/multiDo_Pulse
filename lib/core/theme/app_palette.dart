@@ -14,6 +14,7 @@ enum AppThemeVariant {
 class AppPalette extends ThemeExtension<AppPalette> {
   const AppPalette({
     required this.variant,
+    this.isDark = true,
     required this.base,
     required this.surface1,
     required this.surface2,
@@ -39,7 +40,8 @@ class AppPalette extends ThemeExtension<AppPalette> {
   });
 
   final AppThemeVariant variant;
-  final Color base; // scaffold
+  final bool isDark;
+  final Color base; // scaffold / canvas background
   final Color surface1; // cards
   final Color surface2; // modals / sheets / swipe backgrounds
   final Color surface3;
@@ -64,9 +66,10 @@ class AppPalette extends ThemeExtension<AppPalette> {
 
   bool get isTerminal => variant == AppThemeVariant.obsidianPulse;
 
-  // ── Obsidian Pulse (DESIGN.md: JetBrains Mono, 4px corners, hairline borders)
+  // ── Obsidian Pulse Dark (Terminal, hairline borders, deep matrix green)
   static const pulse = AppPalette(
     variant: AppThemeVariant.obsidianPulse,
+    isDark: true,
     base: Color(0xFF0D150E),
     surface1: Color(0xFF151E16),
     surface2: Color(0xFF19221A),
@@ -91,35 +94,96 @@ class AppPalette extends ThemeExtension<AppPalette> {
     monoNumerics: true,
   );
 
-  // ── Obsidian Apple Precision (DESIGN.md: SF Pro, 24/32px squircles, glass)
+  // ── Obsidian Pulse Light (Technical light terminal paper)
+  static const pulseLight = AppPalette(
+    variant: AppThemeVariant.obsidianPulse,
+    isDark: false,
+    base: Color(0xFFF2F5F2),
+    surface1: Color(0xFFFFFFFF),
+    surface2: Color(0xFFFAFCFA),
+    surface3: Color(0xFFE5EBE5),
+    border: Color(0xFFC7D3C7),
+    accent: Color(0xFF008744),
+    onAccent: Color(0xFFFFFFFF),
+    accentGlow: Color(0x20008744),
+    warning: Color(0xFFB45309),
+    warningBg: Color(0x1AB45309),
+    warningBorder: Color(0x40B45309),
+    textPrimary: Color(0xFF151E16),
+    textMuted: Color(0xFF526354),
+    cardRadius: 4,
+    controlRadius: 4,
+    sheetRadius: 8,
+    pillRadius: 4,
+    checkboxRadius: 2,
+    checkboxIsCircle: false,
+    usesGlass: false,
+    fontFamily: 'JetBrains Mono',
+    monoNumerics: true,
+  );
+
+  // ── Obsidian Apple Precision Dark (Pure and blackest black #000000, fluid glass)
   static const apple = AppPalette(
     variant: AppThemeVariant.obsidianApplePrecision,
-    base: Color(0xFF121317),
-    surface1: Color(0xFF13151B),
-    surface2: Color(0xFF1C1F26),
-    surface3: Color(0xFF1F1F24),
-    border: Color(0x14FFFFFF), // rgba(255,255,255,.08)
+    isDark: true,
+    base: Color(0xFF000000), // Pure, blackest black
+    surface1: Color(0xFF101216), // Subtle elevated card over true black
+    surface2: Color(0xFF16181F),
+    surface3: Color(0xFF1E2028),
+    border: Color(0x1FFFFFFF), // rgba(255,255,255,.12)
     accent: Color(0xFF39FF94),
-    onAccent: Color(0xFF0B0C10),
+    onAccent: Color(0xFF000000),
     accentGlow: Color(0x4039FF94), // rgba(57,255,148,.25)
     warning: Color(0xFFFF6B6B),
     warningBg: Color(0x1FC82A2A),
     warningBorder: Color(0x40C82A2A),
-    textPrimary: Color(0xFFECECEC),
-    textMuted: Color(0xFF6E7687),
+    textPrimary: Color(0xFFF4F4F6),
+    textMuted: Color(0xFF7E8494),
     cardRadius: 24,
     controlRadius: 20,
     sheetRadius: 32,
     pillRadius: 999,
     checkboxRadius: 10,
-    checkboxIsCircle: true, // today_tasks_1 uses round 20px checkboxes
+    checkboxIsCircle: true,
     usesGlass: true,
     fontFamily: null, // system SF on iOS / Roboto fallback elsewhere
     monoNumerics: false,
   );
 
-  static AppPalette of(AppThemeVariant v) =>
-      v == AppThemeVariant.obsidianPulse ? pulse : apple;
+  // ── Obsidian Apple Precision Light (Crisp Apple white canvas & fluid cards)
+  static const appleLight = AppPalette(
+    variant: AppThemeVariant.obsidianApplePrecision,
+    isDark: false,
+    base: Color(0xFFF7F8FA),
+    surface1: Color(0xFFFFFFFF),
+    surface2: Color(0xFFFFFFFF),
+    surface3: Color(0xFFEBEEF2),
+    border: Color(0xFFE1E5EB),
+    accent: Color(0xFF00A854),
+    onAccent: Color(0xFFFFFFFF),
+    accentGlow: Color(0x2000A854),
+    warning: Color(0xFFDC2626),
+    warningBg: Color(0x14DC2626),
+    warningBorder: Color(0x40DC2626),
+    textPrimary: Color(0xFF0F172A),
+    textMuted: Color(0xFF64748B),
+    cardRadius: 24,
+    controlRadius: 20,
+    sheetRadius: 32,
+    pillRadius: 999,
+    checkboxRadius: 10,
+    checkboxIsCircle: true,
+    usesGlass: true,
+    fontFamily: null,
+    monoNumerics: false,
+  );
+
+  static AppPalette of(AppThemeVariant v, {bool isDark = true}) {
+    if (v == AppThemeVariant.obsidianPulse) {
+      return isDark ? pulse : pulseLight;
+    }
+    return isDark ? apple : appleLight;
+  }
 
   @override
   AppPalette copyWith() => this;

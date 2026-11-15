@@ -156,10 +156,14 @@ class _Card extends StatelessWidget {
     final done = task.isCompleted;
 
     final bg = p.usesGlass
-        ? Colors.white.withValues(alpha: done ? 0.015 : 0.03)
+        ? (p.isDark
+            ? Colors.white.withValues(alpha: done ? 0.015 : 0.03)
+            : (done ? const Color(0xFFF1F3F6) : Colors.white))
         : (done ? p.base : p.surface1);
     final border = p.usesGlass
-        ? Colors.white.withValues(alpha: done ? 0.04 : 0.06)
+        ? (p.isDark
+            ? Colors.white.withValues(alpha: done ? 0.04 : 0.06)
+            : (done ? p.border.withValues(alpha: 0.5) : p.border))
         : p.border.withValues(alpha: done ? 0.5 : 1);
 
     final listStyle = TaskFmt.listTitle(context, done: done);

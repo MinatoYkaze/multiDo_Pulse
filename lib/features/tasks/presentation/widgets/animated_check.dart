@@ -150,7 +150,11 @@ class _AnimatedCheckState extends State<AnimatedCheck>
   Widget _box(AppPalette p) {
     final done = widget.value;
     final s = widget.size;
-    final idle = p.usesGlass ? Colors.white.withValues(alpha: 0.3) : p.textMuted;
+    final idle = p.usesGlass
+        ? (p.isDark
+            ? Colors.white.withValues(alpha: 0.3)
+            : Colors.black.withValues(alpha: 0.25))
+        : p.textMuted;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 250),
       width: s,

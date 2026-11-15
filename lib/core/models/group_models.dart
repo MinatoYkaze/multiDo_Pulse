@@ -29,7 +29,7 @@ class Group {
         id: j['id'] as int,
         name: (j['name'] ?? '') as String,
         description: j['description'] as String?,
-        ownerId: (j['owner_id'] ?? j['created_by']) as int?,
+        ownerId: (j['owner_id'] ?? j['owners_id'] ?? j['created_by']) as int?,
         createdAt: parseDate(j['created_at']),
         memberCount: (j['member_count'] ?? 0) as int,
         taskCount: (j['task_count'] ?? 0) as int,
@@ -55,7 +55,7 @@ class GroupPost {
   factory GroupPost.fromJson(Map<String, dynamic> j) => GroupPost(
       name: j['name'] as String, description: j['description'] as String?);
   Map<String, dynamic> toJson() =>
-      compact({'name': name, 'description': description});
+      compact({'name': name, 'description': description ?? ''});
 }
 
 class UpdateGroup {
@@ -190,6 +190,7 @@ class GroupTaskResponse {
   final String? assigneeName;
   final int? createdBy;
   final DateTime? createdAt;
+  final DateTime? updatedAt;
   final List<GroupSubtaskResponse> subtasks;
 
   const GroupTaskResponse({
@@ -204,6 +205,7 @@ class GroupTaskResponse {
     this.assigneeName,
     this.createdBy,
     this.createdAt,
+    this.updatedAt,
     this.subtasks = const [],
   });
 
@@ -220,6 +222,7 @@ class GroupTaskResponse {
         assigneeName: j['assignee_name'] as String?,
         createdBy: j['created_by'] as int?,
         createdAt: parseDate(j['created_at']),
+        updatedAt: parseDate(j['updated_at']),
         subtasks: (j['subtasks'] as List? ?? const [])
             .map((e) =>
                 GroupSubtaskResponse.fromJson(Map<String, dynamic>.from(e)))
@@ -238,6 +241,7 @@ class GroupTaskResponse {
         'assignee_name': assigneeName,
         'created_by': createdBy,
         'created_at': dateToJson(createdAt),
+        'updated_at': dateToJson(updatedAt),
         'subtasks': subtasks.map((e) => e.toJson()).toList(),
       };
 
@@ -255,6 +259,7 @@ class GroupTaskResponse {
         assigneeName: assigneeName,
         createdBy: createdBy,
         createdAt: createdAt,
+        updatedAt: updatedAt,
         subtasks: subtasks ?? this.subtasks,
       );
 }
@@ -326,6 +331,7 @@ class GroupTaskUpdate {
         'priority': priority?.toJson(),
         'due_date': dateToJson(dueDate),
         'is_completed': isCompleted,
+        'completed': isCompleted,
         'assigned_to': assignedTo,
       });
 }

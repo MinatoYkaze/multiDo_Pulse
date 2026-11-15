@@ -26,10 +26,11 @@ class ObsidianApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final variant = ref.watch(prefsProvider.select((s) => s.variant));
+    final isDark = ref.watch(prefsProvider.select((s) => s.isDarkMode));
     return MaterialApp.router(
       title: 'Pulse',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.build(variant),
+      theme: AppTheme.build(variant, isDark: isDark),
       themeAnimationDuration: const Duration(milliseconds: 300),
       routerConfig: ref.watch(routerProvider),
     );

@@ -108,11 +108,31 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
             // ── appearance ─────────────────────────────────────────
             const _SectionLabel('Appearance', trailing: 'THEME'),
+            _Group(children: [
+              _SwitchRow(
+                icon: prefs.isDarkMode
+                    ? Icons.dark_mode_rounded
+                    : Icons.light_mode_rounded,
+                title: 'Dark Mode',
+                subtitle: prefs.isDarkMode
+                    ? (prefs.variant == AppThemeVariant.obsidianApplePrecision
+                        ? 'Pure OLED pitch black (#000000)'
+                        : 'Technical dark terminal (#0D150E)')
+                    : 'Clean light appearance',
+                value: prefs.isDarkMode,
+                onChanged: (v) {
+                  haptics.selection();
+                  ctl.setDarkMode(v);
+                },
+              ),
+            ]),
+            const SizedBox(height: 12),
             Row(children: [
               for (final v in AppThemeVariant.values) ...[
                 Expanded(
                   child: _ThemeOption(
                     variant: v,
+                    isDark: prefs.isDarkMode,
                     selected: prefs.variant == v,
                     onTap: () {
                       haptics.selection();
@@ -390,15 +410,19 @@ class _SegmentRow extends StatelessWidget {
 
 class _ThemeOption extends StatelessWidget {
   const _ThemeOption(
-      {required this.variant, required this.selected, required this.onTap});
+      {required this.variant,
+      this.isDark = true,
+      required this.selected,
+      required this.onTap});
   final AppThemeVariant variant;
+  final bool isDark;
   final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final current = context.palette;
-    final v = AppPalette.of(variant); // preview uses *that* theme's tokens
+    final v = AppPalette.of(variant, isDark: isDark); // preview uses *that* theme's tokens
     final t = Theme.of(context).textTheme;
     return GestureDetector(
       onTap: onTap,

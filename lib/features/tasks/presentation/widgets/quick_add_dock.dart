@@ -54,19 +54,27 @@ class _QuickAddDockState extends State<QuickAddDock> {
       padding: const EdgeInsets.fromLTRB(16, 6, 8, 6),
       decoration: BoxDecoration(
         color: p.usesGlass
-            ? Color.alphaBlend(
-                _focused ? const Color(0x0D39FF94) : Colors.transparent,
-                const Color(0xE6191C20))
+            ? (p.isDark
+                ? Color.alphaBlend(
+                    _focused ? const Color(0x0D39FF94) : Colors.transparent,
+                    const Color(0xE6191C20))
+                : Color.alphaBlend(
+                    _focused ? p.accent.withValues(alpha: 0.08) : Colors.transparent,
+                    const Color(0xF2FFFFFF)))
             : p.surface2,
         borderRadius: radius,
         border: Border.all(
             color: _focused
                 ? p.accent.withValues(alpha: 0.6)
-                : Colors.white.withValues(alpha: p.usesGlass ? 0.08 : 0.0),
+                : (p.isDark
+                    ? Colors.white.withValues(alpha: p.usesGlass ? 0.08 : 0.0)
+                    : p.border),
             width: 1),
         boxShadow: [
           BoxShadow(
-              color: _focused ? p.accentGlow : const Color(0x66000000),
+              color: _focused
+                  ? p.accentGlow
+                  : (p.isDark ? const Color(0x66000000) : const Color(0x14000000)),
               blurRadius: 24,
               offset: _focused ? Offset.zero : const Offset(0, 8)),
         ],
@@ -139,7 +147,11 @@ class _DockButton extends StatelessWidget {
         width: 34,
         height: 34,
         decoration: BoxDecoration(
-          color: active ? p.accent : Colors.white.withValues(alpha: 0.08),
+          color: active
+              ? p.accent
+              : (p.isDark
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : Colors.black.withValues(alpha: 0.06)),
           borderRadius: BorderRadius.circular(p.isTerminal ? 4 : 17),
         ),
         child: Center(

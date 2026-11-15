@@ -5,6 +5,7 @@ import 'app_palette.dart';
 
 class AppPrefsState {
   final AppThemeVariant variant;
+  final bool isDarkMode;
   final bool hapticsEnabled;
   final bool audioFx;
   final bool autoStartBreaks;
@@ -13,6 +14,7 @@ class AppPrefsState {
 
   const AppPrefsState({
     this.variant = AppThemeVariant.obsidianApplePrecision,
+    this.isDarkMode = true,
     this.hapticsEnabled = true,
     this.audioFx = true,
     this.autoStartBreaks = true,
@@ -22,6 +24,7 @@ class AppPrefsState {
 
   AppPrefsState copyWith({
     AppThemeVariant? variant,
+    bool? isDarkMode,
     bool? hapticsEnabled,
     bool? audioFx,
     bool? autoStartBreaks,
@@ -30,6 +33,7 @@ class AppPrefsState {
   }) =>
       AppPrefsState(
         variant: variant ?? this.variant,
+        isDarkMode: isDarkMode ?? this.isDarkMode,
         hapticsEnabled: hapticsEnabled ?? this.hapticsEnabled,
         audioFx: audioFx ?? this.audioFx,
         autoStartBreaks: autoStartBreaks ?? this.autoStartBreaks,
@@ -44,6 +48,7 @@ final sharedPrefsProvider = Provider<SharedPreferences>((ref) =>
 
 class PrefsController extends Notifier<AppPrefsState> {
   static const _kTheme = 'pref_theme_variant';
+  static const _kDarkMode = 'pref_dark_mode';
   static const _kHaptics = 'pref_haptics';
   static const _kAudio = 'pref_audio_fx';
   static const _kAuto = 'pref_auto_breaks';
@@ -58,6 +63,7 @@ class PrefsController extends Notifier<AppPrefsState> {
     return AppPrefsState(
       variant: AppThemeVariant.values.firstWhere((v) => v.name == name,
           orElse: () => AppThemeVariant.obsidianApplePrecision),
+      isDarkMode: _p.getBool(_kDarkMode) ?? true,
       hapticsEnabled: _p.getBool(_kHaptics) ?? true,
       audioFx: _p.getBool(_kAudio) ?? true,
       autoStartBreaks: _p.getBool(_kAuto) ?? true,
@@ -69,6 +75,17 @@ class PrefsController extends Notifier<AppPrefsState> {
   Future<void> setVariant(AppThemeVariant v) async {
     state = state.copyWith(variant: v);
     await _p.setString(_kTheme, v.name);
+  }
+
+  Future<void> toggleDarkMode() async {
+    final next = !state.isDarkMode;
+    state = state.copyWith(isDarkMode: next);
+    await _p.setBool(_kDarkMode, next);
+  }
+
+  Future<void> setDarkMode(bool dark) async {
+    state = state.copyWith(isDarkMode: dark);
+    await _p.setBool(_kDarkMode, dark);
   }
 
   Future<void> setHaptics(bool on) async {

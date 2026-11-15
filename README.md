@@ -53,3 +53,21 @@ Models/endpoints were inferred from schema names; verify against your openapi.js
   `GET/POST /tasks/{id}/subtasks`, `PUT/DELETE /tasks/subtasks/{id}`.
 - Requires Flutter ≥ 3.27 (`Color.withValues`, `DialogThemeData`).
 - `showConfirmDialog` (core/widgets) is the shared delete modal, reused in Phase 4.
+
+## Phase 4 notes (Projects / groups)
+- `/projects` → workspace list (swipe: pin · edit · delete, shimmer progress, delete confirmation modal).
+- `/projects/:id` → workspace detail (All Group Tasks / My Assigned Tasks, members, invites, subtasks).
+- Progress per card is computed from `GET /groups/{id}/tasks` (one request per workspace, cached).
+- Pin is local-only (no API field); persisted in SharedPreferences.
+- Roles: owner/admin can invite, edit and remove members; only the owner can delete; non-owners can leave.
+
+## Phase 5 notes (Focus · Analytics · AI)
+- **Focus**: Pomodoro engine (`focus_controller.dart`) survives tab switches; haptics on minute ticks,
+  halfway, last-10-seconds countdown and a celebration pattern on completion. Finishing a block opens
+  `/focus/milestone` (box-breathing break, XP, stats). Work/rest lengths and auto-start come from Settings.
+- **Analytics**: computed live from tasks + group tasks + local logs. Personal task completions are logged
+  on-device (`activity_log.dart`); focus sessions are stored in `focus_history.dart`. Group tasks use the
+  server `updated_at`.
+- **AI**: Sparkle button in every tab header opens the Pulse AI sheet (`/ai/chat`, `/ai/conversation`).
+  Backed by FastAPI `/ai/*` routes powered by Groq.
+

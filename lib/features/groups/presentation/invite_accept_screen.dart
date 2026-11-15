@@ -6,6 +6,7 @@ import '../../../core/theme/app_palette.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/theme_controller.dart';
 import '../data/invitation_repository.dart';
+import 'groups_providers.dart';
 
 enum _InviteState { idle, loading, success, error }
 
@@ -27,6 +28,7 @@ class _InviteAcceptScreenState extends ConsumerState<InviteAcceptScreen> {
       final res =
           await ref.read(invitationRepositoryProvider).accept(widget.token);
       ref.read(hapticsProvider).success();
+      ref.invalidate(groupsControllerProvider);
       setState(() {
         _state = _InviteState.success;
         _message = res.message.isEmpty ? 'You joined the project.' : res.message;

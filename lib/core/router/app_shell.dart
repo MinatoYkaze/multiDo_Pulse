@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../features/focus/presentation/focus_controller.dart';
 import '../theme/app_palette.dart';
 import '../theme/theme_controller.dart';
 
@@ -24,6 +25,12 @@ class AppShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // A finished focus block pops the milestone screen, whichever tab is open.
+    ref.listen(focusControllerProvider.select((s) => s.milestone), (prev, next) {
+      if (prev == null && next != null) {
+        context.go('/focus/milestone');
+      }
+    });
     return Scaffold(
       extendBody: true,
       resizeToAvoidBottomInset: false,

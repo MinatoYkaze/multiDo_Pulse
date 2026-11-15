@@ -5,10 +5,14 @@ import '../../features/auth/presentation/auth_controller.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/splash_screen.dart';
 import '../../features/groups/presentation/invite_accept_screen.dart';
+import '../../features/groups/presentation/projects_screen.dart';
+import '../../features/groups/presentation/workspace_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/tasks/presentation/task_detail_screen.dart';
 import '../../features/tasks/presentation/today_screen.dart';
-import '../widgets/phase_stub.dart';
+import '../../features/analytics/presentation/analytics_screen.dart';
+import '../../features/focus/presentation/focus_screen.dart';
+import '../../features/focus/presentation/milestone_screen.dart';
 import 'app_shell.dart';
 
 class Routes {
@@ -19,6 +23,8 @@ class Routes {
   static const focus = '/focus';
   static const projects = '/projects';
   static const analytics = '/analytics';
+  static const milestone = '/focus/milestone';
+  static String workspace(int id) => '/projects/$id';
   static const settings = '/settings';
   static String invite(String token) => '/invite/$token';
 
@@ -136,21 +142,69 @@ final routerProvider = Provider<GoRouter>((ref) {
           ]),
           StatefulShellBranch(routes: [
             GoRoute(
-                path: Routes.focus,
-                builder: (_, __) => const PhaseStub(
-                    title: 'Focus', icon: Icons.timer_outlined, phase: 5)),
+              path: Routes.focus,
+              builder: (_, __) => const FocusScreen(),
+              routes: [
+                GoRoute(
+                  path: 'milestone',
+                  pageBuilder: (_, s) => CustomTransitionPage(
+                    key: s.pageKey,
+                    child: const MilestoneScreen(),
+                    transitionDuration: const Duration(milliseconds: 420),
+                    reverseTransitionDuration: const Duration(milliseconds: 300),
+                    transitionsBuilder: (_, anim, __, child) {
+                      final curved = CurvedAnimation(
+                          parent: anim, curve: const Cubic(0.16, 1, 0.3, 1));
+                      return FadeTransition(
+                        opacity: CurvedAnimation(parent: anim, curve: Curves.easeOut),
+                        child: SlideTransition(
+                          position: Tween<Offset>(
+                                  begin: const Offset(0, 0.06), end: Offset.zero)
+                              .animate(curved),
+                          child: child,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
           ]),
           StatefulShellBranch(routes: [
             GoRoute(
-                path: Routes.projects,
-                builder: (_, __) => const PhaseStub(
-                    title: 'Projects', icon: Icons.folder_outlined, phase: 4)),
+              path: Routes.projects,
+              builder: (_, __) => const ProjectsScreen(),
+              routes: [
+                GoRoute(
+                  path: ':id',
+                  pageBuilder: (_, s) => CustomTransitionPage(
+                    key: s.pageKey,
+                    child: WorkspaceScreen(
+                        groupId: int.tryParse(s.pathParameters['id'] ?? '') ?? -1),
+                    transitionDuration: const Duration(milliseconds: 360),
+                    reverseTransitionDuration: const Duration(milliseconds: 280),
+                    transitionsBuilder: (_, anim, __, child) {
+                      final curved = CurvedAnimation(
+                          parent: anim, curve: const Cubic(0.16, 1, 0.3, 1));
+                      return FadeTransition(
+                        opacity: CurvedAnimation(parent: anim, curve: Curves.easeOut),
+                        child: SlideTransition(
+                          position: Tween<Offset>(
+                                  begin: const Offset(0.06, 0), end: Offset.zero)
+                              .animate(curved),
+                          child: child,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
           ]),
           StatefulShellBranch(routes: [
             GoRoute(
                 path: Routes.analytics,
-                builder: (_, __) => const PhaseStub(
-                    title: 'Analytics', icon: Icons.insights_rounded, phase: 5)),
+                builder: (_, __) => const AnalyticsScreen()),
           ]),
         ],
       ),
