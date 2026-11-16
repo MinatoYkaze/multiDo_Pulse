@@ -45,6 +45,8 @@ class Api {
   static String groupInvite(int g) => '/groups/$g/invite';
   static String acceptInvitation(String token) =>
       '/groups/invitations/$token/accept';
+  static String invitationPreview(String token) =>
+      '/groups/invitations/$token/preview';
   static String groupLeave(int g) => '/groups/$g/leave';
   static String groupMember(int g, int userId) => '/groups/$g/members/$userId';
 

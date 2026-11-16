@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../features/ai/presentation/ai_chat_screen.dart';
 import '../../features/auth/presentation/auth_controller.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/splash_screen.dart';
+import '../../features/groups/presentation/group_workspace_screen.dart';
 import '../../features/groups/presentation/invite_accept_screen.dart';
+import '../../features/groups/presentation/projects_dashboard_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/tasks/presentation/task_detail_screen.dart';
 import '../../features/tasks/presentation/today_screen.dart';
+import '../services/deep_link_service.dart';
 import '../widgets/phase_stub.dart';
 import 'app_shell.dart';
 
@@ -18,9 +22,12 @@ class Routes {
   static const today = '/today';
   static const focus = '/focus';
   static const projects = '/projects';
+  static String project(int id) => '/projects/$id';
   static const analytics = '/analytics';
   static const settings = '/settings';
-  static String invite(String token) => '/invite/$token';
+  static const ai = '/ai';
+  static String invite(String token) => '/groups/invitations/$token';
+  static String legacyInvite(String token) => '/invite/$token';
 
   /// Nested under the Today branch so the bottom nav stays visible and the
   /// title Hero can fly (heroes don't cross nested-navigator boundaries).
@@ -79,6 +86,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: Routes.splash, builder: (_, __) => const SplashScreen()),
       GoRoute(path: Routes.login, builder: (_, __) => const LoginScreen()),
       GoRoute(
+        path: '/groups/invitations/:token',
+        builder: (_, s) => InviteAcceptScreen(token: s.pathParameters['token']!),
+      ),
+      GoRoute(
         path: '/invite/:token',
         builder: (_, s) => InviteAcceptScreen(token: s.pathParameters['token']!),
       ),
@@ -91,6 +102,23 @@ final routerProvider = Provider<GoRouter>((ref) {
           transitionDuration: const Duration(milliseconds: 320),
           transitionsBuilder: (_, anim, __, child) => SlideTransition(
             position: Tween(begin: const Offset(0, 0.06), end: Offset.zero)
+                .chain(CurveTween(curve: Curves.easeOutCubic))
+                .animate(anim),
+            child: FadeTransition(opacity: anim, child: child),
+          ),
+        ),
+      ),
+      GoRoute(
+        path: Routes.ai,
+        parentNavigatorKey: _rootKey,
+        pageBuilder: (_, s) => CustomTransitionPage(
+          key: s.pageKey,
+          child: AIChatScreen(
+            initialThreadId: s.uri.queryParameters['thread_id'],
+          ),
+          transitionDuration: const Duration(milliseconds: 300),
+          transitionsBuilder: (_, anim, __, child) => SlideTransition(
+            position: Tween(begin: const Offset(0, 0.05), end: Offset.zero)
                 .chain(CurveTween(curve: Curves.easeOutCubic))
                 .animate(anim),
             child: FadeTransition(opacity: anim, child: child),
@@ -142,9 +170,24 @@ final routerProvider = Provider<GoRouter>((ref) {
           ]),
           StatefulShellBranch(routes: [
             GoRoute(
-                path: Routes.projects,
-                builder: (_, __) => const PhaseStub(
-                    title: 'Projects', icon: Icons.folder_outlined, phase: 4)),
+              path: Routes.projects,
+              builder: (_, __) => const ProjectsDashboardScreen(),
+              routes: [
+                GoRoute(
+                  path: ':id',
+                  pageBuilder: (_, s) => CustomTransitionPage(
+                    key: s.pageKey,
+                    child: GroupWorkspaceScreen(
+                      groupId:
+                          int.tryParse(s.pathParameters['id'] ?? '') ?? -1,
+                    ),
+                    transitionDuration: const Duration(milliseconds: 320),
+                    transitionsBuilder: (_, anim, __, child) =>
+                        FadeTransition(opacity: anim, child: child),
+                  ),
+                ),
+              ],
+            ),
           ]),
           StatefulShellBranch(routes: [
             GoRoute(
@@ -157,5 +200,17 @@ final routerProvider = Provider<GoRouter>((ref) {
     ],
   );
   ref.onDispose(router.dispose);
+
+  // Listen for deep-link invitation tokens and navigate to the invite screen.
+  // Track the last processed token to prevent duplicate navigation.
+  String? lastProcessedToken;
+  ref.listen(deepLinkTokenProvider, (_, next) {
+    final token = next.valueOrNull;
+    if (token != null && token != lastProcessedToken) {
+      lastProcessedToken = token;
+      router.go(Routes.invite(token));
+    }
+  });
+
   return router;
 });

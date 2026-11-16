@@ -1,15 +1,102 @@
 import 'json_helpers.dart';
 
 class AIChatRequest {
-  final String message;
-  final String? threadId;
-  const AIChatRequest({required this.message, this.threadId});
+  final String threadId;
+  final String? message;
+  final String? decision; // 'accept' or 'reject' for HITL confirmation
+
+  const AIChatRequest({
+    required this.threadId,
+    this.message,
+    this.decision,
+  });
 
   factory AIChatRequest.fromJson(Map<String, dynamic> j) => AIChatRequest(
-      message: j['message'] as String, threadId: j['thread_id'] as String?);
+        threadId: (j['thread_id'] ?? '').toString(),
+        message: j['message'] as String?,
+        decision: j['decision'] as String?,
+      );
 
-  Map<String, dynamic> toJson() =>
-      compact({'message': message, 'thread_id': threadId});
+  Map<String, dynamic> toJson() => compact({
+        'thread_id': threadId,
+        'message': message,
+        'decision': decision,
+      });
+}
+
+class AIApproval {
+  final String action;
+  final Map<String, dynamic> details;
+  final String? message;
+
+  const AIApproval({
+    required this.action,
+    this.details = const {},
+    this.message,
+  });
+
+  factory AIApproval.fromJson(Map<String, dynamic> j) {
+    Map<String, dynamic> detailsMap = const {};
+    if (j['details'] is Map) {
+      detailsMap = Map<String, dynamic>.from(j['details'] as Map);
+    } else if (j['args'] is Map) {
+      detailsMap = Map<String, dynamic>.from(j['args'] as Map);
+    } else if (j['parameters'] is Map) {
+      detailsMap = Map<String, dynamic>.from(j['parameters'] as Map);
+    }
+
+    return AIApproval(
+      action: (j['action'] ?? j['tool'] ?? j['name'] ?? 'action') as String,
+      details: detailsMap,
+      message: j['message'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'action': action,
+        'details': details,
+        'message': message,
+      };
+}
+
+class AIChatResponse {
+  final String status; // 'completed' or 'pending_approval'
+  final String? message;
+  final String? threadId;
+  final AIApproval? approval;
+
+  const AIChatResponse({
+    required this.status,
+    this.message,
+    this.threadId,
+    this.approval,
+  });
+
+  bool get isPendingApproval =>
+      status == 'pending_approval' || approval != null;
+
+  factory AIChatResponse.fromJson(Map<String, dynamic> j) {
+    AIApproval? approvalObj;
+    if (j['approval'] != null && j['approval'] is Map) {
+      approvalObj =
+          AIApproval.fromJson(Map<String, dynamic>.from(j['approval'] as Map));
+    }
+
+    return AIChatResponse(
+      status: (j['status'] ?? 'completed') as String,
+      message: (j['message'] ?? j['response'] ?? j['reply'] ?? j['content'])
+          as String?,
+      threadId: (j['thread_id'] ?? j['threadId'])?.toString(),
+      approval: approvalObj,
+    );
+  }
+
+  Map<String, dynamic> toJson() => compact({
+        'status': status,
+        'message': message,
+        'thread_id': threadId,
+        'approval': approval?.toJson(),
+      });
 }
 
 class AIConversationResponse {

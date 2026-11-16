@@ -142,6 +142,7 @@ class GroupInvitationResponse {
   final InvitationStatus status;
   final DateTime? expiresAt;
   final DateTime? createdAt;
+  final bool isResend;
 
   const GroupInvitationResponse({
     this.id,
@@ -152,6 +153,7 @@ class GroupInvitationResponse {
     this.status = InvitationStatus.pending,
     this.expiresAt,
     this.createdAt,
+    this.isResend = false,
   });
 
   factory GroupInvitationResponse.fromJson(Map<String, dynamic> j) =>
@@ -164,6 +166,7 @@ class GroupInvitationResponse {
         status: InvitationStatus.fromJson(j['status']),
         expiresAt: parseDate(j['expires_at']),
         createdAt: parseDate(j['created_at']),
+        isResend: (j['is_resend'] ?? false) as bool,
       );
 
   Map<String, dynamic> toJson() => {
@@ -175,6 +178,45 @@ class GroupInvitationResponse {
         'status': status.toJson(),
         'expires_at': dateToJson(expiresAt),
         'created_at': dateToJson(createdAt),
+        'is_resend': isResend,
+      };
+}
+
+/// Preview of a project invitation before acceptance (Requirement 5).
+class InvitationPreview {
+  final int groupId;
+  final String groupName;
+  final String? groupDescription;
+  final String? inviterEmail;
+  final String? inviterName;
+  final DateTime? expiresAt;
+
+  const InvitationPreview({
+    required this.groupId,
+    required this.groupName,
+    this.groupDescription,
+    this.inviterEmail,
+    this.inviterName,
+    this.expiresAt,
+  });
+
+  factory InvitationPreview.fromJson(Map<String, dynamic> j) =>
+      InvitationPreview(
+        groupId: (j['group_id'] ?? 0) as int,
+        groupName: (j['group_name'] ?? 'Project') as String,
+        groupDescription: j['group_description'] as String?,
+        inviterEmail: j['inviter_email'] as String?,
+        inviterName: j['inviter_name'] as String?,
+        expiresAt: parseDate(j['expires_at']),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'group_id': groupId,
+        'group_name': groupName,
+        'group_description': groupDescription,
+        'inviter_email': inviterEmail,
+        'inviter_name': inviterName,
+        'expires_at': dateToJson(expiresAt),
       };
 }
 

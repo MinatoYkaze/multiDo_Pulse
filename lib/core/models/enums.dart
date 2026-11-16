@@ -3,7 +3,8 @@ import 'json_helpers.dart';
 enum Priority {
   low,
   medium,
-  high;
+  high,
+  urgent;
 
   String get label => name.toUpperCase();
   String toJson() => name;

@@ -166,7 +166,7 @@ class AppTheme {
       highlightColor: Colors.transparent,
       extensions: [p],
       appBarTheme: AppBarTheme(
-        backgroundColor: p.base.withOpacity(0.8),
+        backgroundColor: p.base.withValues(alpha: 0.8),
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
@@ -258,8 +258,8 @@ class AppTheme {
         ),
       ),
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: p.base.withOpacity(0.85),
-        indicatorColor: p.accent.withOpacity(0.12),
+        backgroundColor: p.base.withValues(alpha: 0.85),
+        indicatorColor: p.accent.withValues(alpha: 0.12),
         elevation: 0,
         height: 68,
         labelTextStyle: WidgetStateProperty.resolveWith((s) =>
