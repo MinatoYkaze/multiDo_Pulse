@@ -6,6 +6,8 @@ extension PriorityUi on Priority {
   Color color(BuildContext context) {
     final p = context.palette;
     switch (this) {
+      case Priority.urgent:
+        return const Color(0xFFFF3366);
       case Priority.high:
         return Theme.of(context).colorScheme.error;
       case Priority.medium:
@@ -18,6 +20,8 @@ extension PriorityUi on Priority {
   /// "P1 · HIGH" style tag from the detail screen's priority pill.
   String get tag {
     switch (this) {
+      case Priority.urgent:
+        return 'P0 · URGENT';
       case Priority.high:
         return 'P1 · HIGH';
       case Priority.medium:
@@ -69,7 +73,7 @@ class _PriorityBadgeState extends State<PriorityBadge>
   }
 
   void _sync() {
-    if (widget.priority == Priority.high) {
+    if (widget.priority == Priority.high || widget.priority == Priority.urgent) {
       if (!_c.isAnimating) _c.repeat(reverse: true);
     } else {
       _c.stop();
@@ -106,7 +110,8 @@ class _PriorityBadgeState extends State<PriorityBadge>
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 1 - 0.55 * _c.value),
                 shape: BoxShape.circle,
-                boxShadow: widget.priority == Priority.high
+                boxShadow: (widget.priority == Priority.high ||
+                        widget.priority == Priority.urgent)
                     ? [
                         BoxShadow(
                             color: color.withValues(alpha: 0.6 * _c.value),

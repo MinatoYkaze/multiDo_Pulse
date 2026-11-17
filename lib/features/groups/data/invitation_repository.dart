@@ -7,11 +7,23 @@ class InvitationRepository {
   InvitationRepository(this._api);
   final ApiClient _api;
 
-  /// GET /groups/invitations/{token}/accept
-  Future<MessageResponse> accept(String token) => _api.get(
+  /// POST /groups/invitations/{token}/accept
+  Future<MessageResponse> accept(String token) => _api.post(
         Api.acceptInvitation(token),
         parse: (d) => ApiClient.obj(d, MessageResponse.fromJson),
       );
+
+  /// GET /groups/invitations/{token}/preview
+  Future<InvitationPreview?> getPreview(String token) async {
+    try {
+      return await _api.get(
+        Api.invitationPreview(token),
+        parse: (d) => ApiClient.obj(d, InvitationPreview.fromJson),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
 }
 
 final invitationRepositoryProvider = Provider<InvitationRepository>(

@@ -12,6 +12,7 @@ import '../../../core/widgets/app_snack.dart';
 import '../../../core/widgets/async_states.dart';
 import 'task_format.dart';
 import 'tasks_controller.dart';
+import 'widgets/floating_ai_button.dart';
 import 'widgets/quick_add_dock.dart';
 import 'widgets/task_editor_sheet.dart';
 import 'widgets/task_row.dart';
@@ -123,7 +124,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     final keyboard = mq.viewInsets.bottom > 0;
     // mq.padding.bottom already includes the glass nav bar (extendBody).
     final dockBottom = keyboard ? 10.0 : mq.padding.bottom + 10;
-    final listBottom = dockBottom + 84;
+    final listBottom = dockBottom + 120;
 
     Widget body;
     if (async.isLoading && !async.hasValue) {
@@ -250,6 +251,13 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
           Expanded(
             child: Stack(children: [
               Positioned.fill(child: body),
+              Positioned(
+                right: 16,
+                bottom: dockBottom + 64,
+                child: FloatingAIAssistantButton(
+                  visible: !keyboard,
+                ),
+              ),
               Positioned(
                 left: 16,
                 right: 16,

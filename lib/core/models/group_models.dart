@@ -100,13 +100,15 @@ class GroupMemberResponse {
 
   factory GroupMemberResponse.fromJson(Map<String, dynamic> j) {
     final user = j['user'] is Map ? Map<String, dynamic>.from(j['user']) : j;
+    final rawId = j['user_id'] ?? user['id'] ?? j['id'];
+    final userId = rawId is int ? rawId : (int.tryParse(rawId?.toString() ?? '') ?? 0);
     return GroupMemberResponse(
-      userId: (j['user_id'] ?? user['id']) as int,
+      userId: userId,
       groupId: j['group_id'] as int?,
       role: Role.fromJson(j['role']),
-      name: (user['name'] ?? user['full_name']) as String?,
-      email: user['email'] as String?,
-      picture: (user['picture'] ?? user['avatar_url']) as String?,
+      name: (user['username'] ?? user['name'] ?? user['full_name'] ?? j['username'] ?? j['name']) as String?,
+      email: (user['email'] ?? j['email']) as String?,
+      picture: (user['picture'] ?? user['avatar_url'] ?? j['picture']) as String?,
       joinedAt: parseDate(j['joined_at'] ?? j['created_at']),
     );
   }
@@ -129,8 +131,9 @@ class GroupInvitationBase {
   const GroupInvitationBase({required this.email, this.role = Role.member});
   factory GroupInvitationBase.fromJson(Map<String, dynamic> j) =>
       GroupInvitationBase(
-          email: j['email'] as String, role: Role.fromJson(j['role']));
-  Map<String, dynamic> toJson() => {'email': email, 'role': role.toJson()};
+          email: j['email'] as String,
+          role: j['role'] == null ? Role.member : Role.fromJson(j['role']));
+  Map<String, dynamic> toJson() => {'email': email};
 }
 
 class GroupInvitationResponse {
@@ -142,6 +145,7 @@ class GroupInvitationResponse {
   final InvitationStatus status;
   final DateTime? expiresAt;
   final DateTime? createdAt;
+  final bool isResend;
 
   const GroupInvitationResponse({
     this.id,
@@ -152,6 +156,7 @@ class GroupInvitationResponse {
     this.status = InvitationStatus.pending,
     this.expiresAt,
     this.createdAt,
+    this.isResend = false,
   });
 
   factory GroupInvitationResponse.fromJson(Map<String, dynamic> j) =>
@@ -164,6 +169,7 @@ class GroupInvitationResponse {
         status: InvitationStatus.fromJson(j['status']),
         expiresAt: parseDate(j['expires_at']),
         createdAt: parseDate(j['created_at']),
+        isResend: (j['is_resend'] ?? false) as bool,
       );
 
   Map<String, dynamic> toJson() => {
@@ -175,6 +181,45 @@ class GroupInvitationResponse {
         'status': status.toJson(),
         'expires_at': dateToJson(expiresAt),
         'created_at': dateToJson(createdAt),
+        'is_resend': isResend,
+      };
+}
+
+/// Preview of a project invitation before acceptance (Requirement 5).
+class InvitationPreview {
+  final int groupId;
+  final String groupName;
+  final String? groupDescription;
+  final String? inviterEmail;
+  final String? inviterName;
+  final DateTime? expiresAt;
+
+  const InvitationPreview({
+    required this.groupId,
+    required this.groupName,
+    this.groupDescription,
+    this.inviterEmail,
+    this.inviterName,
+    this.expiresAt,
+  });
+
+  factory InvitationPreview.fromJson(Map<String, dynamic> j) =>
+      InvitationPreview(
+        groupId: (j['group_id'] ?? 0) as int,
+        groupName: (j['group_name'] ?? 'Project') as String,
+        groupDescription: j['group_description'] as String?,
+        inviterEmail: j['inviter_email'] as String?,
+        inviterName: j['inviter_name'] as String?,
+        expiresAt: parseDate(j['expires_at']),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'group_id': groupId,
+        'group_name': groupName,
+        'group_description': groupDescription,
+        'inviter_email': inviterEmail,
+        'inviter_name': inviterName,
+        'expires_at': dateToJson(expiresAt),
       };
 }
 
@@ -321,8 +366,8 @@ class GroupTaskUpdate {
         priority:
             j['priority'] == null ? null : Priority.fromJson(j['priority']),
         dueDate: parseDate(j['due_date']),
-        isCompleted: j['is_completed'] as bool?,
-        assignedTo: j['assigned_to'] as int?,
+        isCompleted: (j['completed'] ?? j['is_completed']) as bool?,
+        assignedTo: (j['assigned_to'] ?? j['assignee_id']) as int?,
       );
 
   Map<String, dynamic> toJson() => compact({
@@ -368,7 +413,9 @@ class GroupSubtaskResponse {
   Map<String, dynamic> toJson() => {
         'id': id,
         'task_id': taskId,
+        'group_task_id': taskId,
         'title': title,
+        'completed': isCompleted,
         'is_completed': isCompleted,
       };
 
@@ -388,7 +435,7 @@ class GroupSubtaskUpdate {
   factory GroupSubtaskUpdate.fromJson(Map<String, dynamic> j) =>
       GroupSubtaskUpdate(
           title: j['title'] as String?,
-          isCompleted: j['is_completed'] as bool?);
+          isCompleted: (j['completed'] ?? j['is_completed']) as bool?);
   Map<String, dynamic> toJson() =>
-      compact({'title': title, 'is_completed': isCompleted});
+      compact({'title': title, 'completed': isCompleted});
 }
