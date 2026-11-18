@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/audio/audio_controller.dart';
 import '../../../core/network/api_endpoints.dart';
 import '../../../core/theme/app_palette.dart';
 import '../../../core/theme/app_theme.dart';
@@ -207,6 +208,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 onChanged: (v) {
                   haptics.light();
                   ctl.setAudioFx(v);
+                  if (v) {
+                    ref.read(audioFxProvider).playChime();
+                  }
                 },
               ),
             ]),

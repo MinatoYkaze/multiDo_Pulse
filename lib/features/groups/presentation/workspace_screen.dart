@@ -2,6 +2,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/audio/audio_controller.dart';
 import '../../../core/models/models.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_palette.dart';
@@ -86,7 +87,12 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
 
   void _toggle(GroupTaskResponse t) async {
     final h = ref.read(hapticsProvider);
-    t.isCompleted ? h.light() : h.success();
+    if (!t.isCompleted) {
+      h.success();
+      ref.read(audioFxProvider).playChime();
+    } else {
+      h.light();
+    }
     try {
       await _tasks.toggle(t);
     } catch (e) {

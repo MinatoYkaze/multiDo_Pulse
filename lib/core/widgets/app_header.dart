@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/auth_controller.dart';
 import '../theme/app_palette.dart';
 import '../theme/theme_controller.dart';
-import '../../features/ai_chat/presentation/ai_chat_sheet.dart';
 import 'pulse_mark.dart';
 import 'user_avatar.dart';
 
@@ -36,23 +35,6 @@ class AppHeader extends ConsumerWidget {
           ]),
         ),
         ...?actions,
-        const SizedBox(width: 8),
-        GestureDetector(
-          onTap: () {
-            ref.read(hapticsProvider).light();
-            AiChatSheet.show(context);
-          },
-          child: Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: p.accent.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(p.isTerminal ? 4 : 12),
-              border: Border.all(color: p.accent.withValues(alpha: 0.3)),
-            ),
-            child: Icon(Icons.auto_awesome_rounded, size: 18, color: p.accent),
-          ),
-        ),
         const SizedBox(width: 8),
         GestureDetector(
           onTap: () {

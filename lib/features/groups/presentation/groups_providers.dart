@@ -1,6 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/models.dart';
+import '../../../core/storage/offline_cache.dart';
 import '../../../core/theme/theme_controller.dart';
 import '../../analytics/data/activity_log.dart';
 import '../../auth/presentation/auth_controller.dart';
@@ -10,14 +11,30 @@ import '../data/groups_repository.dart';
 
 class GroupsController extends AsyncNotifier<List<Group>> {
   GroupsRepository get _repo => ref.read(groupsRepositoryProvider);
+  OfflineCache get _cache => ref.read(offlineCacheProvider);
   List<Group> get _cur => state.valueOrNull ?? const [];
 
   @override
-  Future<List<Group>> build() => _repo.groups();
+  Future<List<Group>> build() async {
+    final cached = _cache.getGroups();
+    if (cached.isNotEmpty) {
+      state = AsyncData(cached);
+    }
+    try {
+      final fresh = await _repo.groups();
+      await _cache.saveGroups(fresh);
+      return fresh;
+    } catch (e, s) {
+      if (cached.isNotEmpty) return cached;
+      rethrow;
+    }
+  }
 
   Future<void> reload() async {
     try {
-      state = AsyncData(await _repo.groups());
+      final fresh = await _repo.groups();
+      state = AsyncData(fresh);
+      await _cache.saveGroups(fresh);
     } catch (e, s) {
       if (!state.hasValue) state = AsyncError(e, s);
     }
@@ -28,13 +45,15 @@ class GroupsController extends AsyncNotifier<List<Group>> {
     if (g == null) {
       await reload();
     } else {
-      state = AsyncData([g, ..._cur]);
+      final next = [g, ..._cur];
+      state = AsyncData(next);
+      await _cache.saveGroups(next);
     }
   }
 
   Future<void> edit(Group g, UpdateGroup b) async {
     final old = _cur;
-    state = AsyncData([
+    final updated = [
       for (final x in old)
         x.id == g.id
             ? Group(
@@ -47,11 +66,14 @@ class GroupsController extends AsyncNotifier<List<Group>> {
                 taskCount: x.taskCount,
                 completedTaskCount: x.completedTaskCount)
             : x
-    ]);
+    ];
+    state = AsyncData(updated);
+    await _cache.saveGroups(updated);
     try {
       await _repo.update(g.id, b);
     } catch (_) {
       state = AsyncData(old);
+      await _cache.saveGroups(old);
       rethrow;
     }
   }
@@ -59,12 +81,17 @@ class GroupsController extends AsyncNotifier<List<Group>> {
   /// Deletes on the server first, then drops it locally.
   Future<void> remove(int id) async {
     await _repo.delete(id);
-    state = AsyncData(_cur.where((g) => g.id != id).toList());
+    final updated = _cur.where((g) => g.id != id).toList();
+    state = AsyncData(updated);
+    await _cache.saveGroups(updated);
     ref.invalidate(groupTasksProvider(id));
   }
 
-  void dropLocal(int id) =>
-      state = AsyncData(_cur.where((g) => g.id != id).toList());
+  void dropLocal(int id) {
+    final updated = _cur.where((g) => g.id != id).toList();
+    state = AsyncData(updated);
+    _cache.saveGroups(updated);
+  }
 }
 
 final groupsControllerProvider =
@@ -112,39 +139,76 @@ final pinnedGroupsProvider =
 class GroupTasksController
     extends FamilyAsyncNotifier<List<GroupTaskResponse>, int> {
   GroupsRepository get _repo => ref.read(groupsRepositoryProvider);
+  OfflineCache get _cache => ref.read(offlineCacheProvider);
   List<GroupTaskResponse> get _cur => state.valueOrNull ?? const [];
   DateTime lastSync = DateTime.now();
 
   @override
   Future<List<GroupTaskResponse>> build(int arg) async {
-    final r = await _repo.tasks(arg);
-    lastSync = DateTime.now();
-    return r;
+    final cached = _cache.getGroupTasks(arg);
+    if (cached.isNotEmpty) {
+      state = AsyncData(cached);
+    }
+    try {
+      final r = await _repo.tasks(arg);
+      lastSync = DateTime.now();
+      await _cache.saveGroupTasks(arg, r);
+      return r;
+    } catch (e, s) {
+      if (cached.isNotEmpty) return cached;
+      rethrow;
+    }
   }
 
   void _refreshMine() => ref.invalidate(myGroupTasksProvider(arg));
 
   Future<void> reload() async {
     try {
-      state = AsyncData(await _repo.tasks(arg));
+      final fresh = await _repo.tasks(arg);
+      state = AsyncData(fresh);
       lastSync = DateTime.now();
+      await _cache.saveGroupTasks(arg, fresh);
       _refreshMine();
     } catch (e, s) {
       if (!state.hasValue) state = AsyncError(e, s);
     }
   }
 
-  void _patch(GroupTaskResponse t) =>
-      state = AsyncData([for (final x in _cur) x.id == t.id ? t : x]);
+  void _patch(GroupTaskResponse t) {
+    final updated = [for (final x in _cur) x.id == t.id ? t : x];
+    state = AsyncData(updated);
+    _cache.saveGroupTasks(arg, updated);
+  }
 
   Future<void> add(GroupTasksCreate b) async {
-    final t = await _repo.createTask(arg, b);
-    if (t == null) {
-      await reload();
-    } else {
-      state = AsyncData([t, ..._cur]);
-      _refreshMine();
-    }
+    final tempId = -DateTime.now().millisecondsSinceEpoch;
+    final local = GroupTaskResponse(
+      id: tempId,
+      groupId: arg,
+      title: b.title,
+      description: b.description,
+      priority: b.priority,
+      isCompleted: false,
+      dueDate: b.dueDate,
+      assignedTo: b.assignedTo,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+    final next = [local, ..._cur];
+    state = AsyncData(next);
+    await _cache.saveGroupTasks(arg, next);
+    _refreshMine();
+
+    try {
+      final t = await _repo.createTask(arg, b);
+      if (t != null) {
+        final cur = state.valueOrNull ?? next;
+        final replaced = cur.map((x) => x.id == tempId ? t : x).toList();
+        state = AsyncData(replaced);
+        await _cache.saveGroupTasks(arg, replaced);
+        _refreshMine();
+      }
+    } catch (_) {}
   }
 
   Future<void> toggle(GroupTaskResponse t) async {
@@ -152,14 +216,11 @@ class GroupTasksController
     _patch(next);
     final log = ref.read(activityLogProvider.notifier);
     next.isCompleted ? log.logDone('g:$arg:${t.id}') : log.undo('g:$arg:${t.id}');
+    if (t.id < 0) return;
     try {
       await _repo.updateTask(arg, t.id, GroupTaskUpdate(isCompleted: next.isCompleted));
       _refreshMine();
-    } catch (_) {
-      _patch(t);
-      next.isCompleted ? log.undo('g:$arg:${t.id}') : log.logDone('g:$arg:${t.id}');
-      rethrow;
-    }
+    } catch (_) {}
   }
 
   Future<void> edit(GroupTaskResponse t, GroupTaskUpdate b) async {
@@ -191,14 +252,14 @@ class GroupTasksController
 
   Future<void> remove(GroupTaskResponse t) async {
     final old = _cur;
-    state = AsyncData(old.where((x) => x.id != t.id).toList());
+    final updated = old.where((x) => x.id != t.id).toList();
+    state = AsyncData(updated);
+    await _cache.saveGroupTasks(arg, updated);
+    _refreshMine();
+    if (t.id < 0) return;
     try {
       await _repo.deleteTask(arg, t.id);
-      _refreshMine();
-    } catch (_) {
-      state = AsyncData(old);
-      rethrow;
-    }
+    } catch (_) {}
   }
 }
 

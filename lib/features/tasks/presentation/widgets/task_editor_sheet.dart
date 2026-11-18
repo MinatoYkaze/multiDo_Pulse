@@ -106,7 +106,8 @@ class _TaskEditorSheetState extends State<TaskEditorSheet> {
         _date != null && _date == today.add(const Duration(days: 1));
 
     return AnimatedPadding(
-      duration: const Duration(milliseconds: 150),
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOutCubic,
       padding: EdgeInsets.only(bottom: insets),
       child: Container(
         decoration: AppDecor.sheet(p),

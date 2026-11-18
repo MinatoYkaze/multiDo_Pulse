@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/audio/audio_controller.dart';
 import '../../../core/theme/theme_controller.dart';
 import '../data/focus_history.dart';
 import 'focus_task_provider.dart';
@@ -299,6 +300,7 @@ class FocusController extends Notifier<FocusState> {
 
   /// `[20, 50, 40, 60, 20]`-style celebration from the milestone design.
   Future<void> _celebrate() async {
+    ref.read(audioFxProvider).playChime();
     final h = ref.read(hapticsProvider);
     h.heavy();
     await Future<void>.delayed(const Duration(milliseconds: 120));

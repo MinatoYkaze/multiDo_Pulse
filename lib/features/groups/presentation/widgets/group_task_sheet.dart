@@ -1,6 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/audio/audio_controller.dart';
 import '../../../../core/models/models.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/theme/app_palette.dart';
@@ -149,7 +150,8 @@ class _GroupTaskSheetState extends ConsumerState<GroupTaskSheet> {
     final progress = list.isEmpty ? 0.0 : done / list.length;
 
     return AnimatedPadding(
-      duration: const Duration(milliseconds: 150),
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOutCubic,
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
         constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.9),
@@ -190,7 +192,12 @@ class _GroupTaskSheetState extends ConsumerState<GroupTaskSheet> {
                       size: 24,
                       onChanged: () {
                         final h = ref.read(hapticsProvider);
-                        task.isCompleted ? h.light() : h.success();
+                        if (!task.isCompleted) {
+                          h.success();
+                          ref.read(audioFxProvider).playChime();
+                        } else {
+                          h.light();
+                        }
                         _run(() => ref.read(groupTasksProvider(widget.groupId).notifier).toggle(task));
                       },
                     ),

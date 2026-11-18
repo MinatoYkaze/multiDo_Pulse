@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../../../core/audio/audio_controller.dart';
 import '../../../core/models/models.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/router/app_router.dart';
@@ -45,9 +46,14 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
 
   Future<void> _quickAdd() async {
     final title = _input.text.trim();
-    if (title.isEmpty || _adding) return;
+    if (title.isEmpty) {
+      _openEditor();
+      return;
+    }
+    if (_adding) return;
     setState(() => _adding = true);
     ref.read(hapticsProvider).light();
+    ref.read(audioFxProvider).playPop();
     try {
       await ref
           .read(tasksControllerProvider.notifier)
@@ -83,7 +89,12 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
 
   Future<void> _toggle(Tasks t) async {
     final h = ref.read(hapticsProvider);
-    t.isCompleted ? h.light() : h.success();
+    if (!t.isCompleted) {
+      h.success();
+      ref.read(audioFxProvider).playChime();
+    } else {
+      h.light();
+    }
     try {
       await ref.read(tasksControllerProvider.notifier).toggle(t);
     } catch (e) {
@@ -238,7 +249,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
               ),
               const SizedBox(width: 6),
               _HeaderButton(
-                icon: Icons.auto_awesome_rounded,
+                icon: Icons.animation_rounded,
                 active: rich,
                 tooltip: rich ? 'Rich motion on' : 'Rich motion off',
                 onTap: () {
@@ -251,14 +262,18 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
           Expanded(
             child: Stack(children: [
               Positioned.fill(child: body),
-              Positioned(
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOutCubic,
                 right: 16,
                 bottom: dockBottom + 64,
                 child: FloatingAIAssistantButton(
                   visible: !keyboard,
                 ),
               ),
-              Positioned(
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOutCubic,
                 left: 16,
                 right: 16,
                 bottom: dockBottom,

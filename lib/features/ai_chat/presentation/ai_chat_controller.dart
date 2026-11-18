@@ -75,7 +75,7 @@ class AiChatController extends Notifier<ChatState> {
           // let /ai/chat create the thread itself
         }
       }
-      final r = await _repo.chat(AIChatRequest(message: q, threadId: tid));
+      final r = await _repo.chat(AIChatRequest(message: q, threadId: tid ?? ''));
       state = state.copyWith(
         threadId: tid ?? r.threadId,
         messages: [...state.messages, ChatMessage(false, r.text)],

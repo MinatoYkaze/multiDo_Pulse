@@ -1,5 +1,7 @@
+import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/models.dart';
+import '../../../core/storage/offline_cache.dart';
 import '../data/task_repository.dart';
 import 'tasks_controller.dart';
 
@@ -25,11 +27,34 @@ class TaskDetailController
 
   @override
   Future<TaskDetailState> build(int arg) async {
-    final r =
-        await Future.wait<dynamic>([_repo.get(arg), _repo.subtasks(arg)]);
-    final subs = r[1] as List<SubtaskResponse>;
-    final task = (r[0] as Tasks).copyWith(subtasks: subs);
-    return TaskDetailState(task: task, subtasks: subs);
+    final cachedTask = ref
+        .watch(tasksControllerProvider)
+        .valueOrNull
+        ?.firstWhereOrNull((t) => t.id == arg)
+        ?? ref.read(offlineCacheProvider).getTasks().firstWhereOrNull((t) => t.id == arg);
+
+    if (cachedTask != null) {
+      state = AsyncData(TaskDetailState(task: cachedTask, subtasks: cachedTask.subtasks));
+    }
+
+    if (arg < 0) {
+      // Offline local task that has not reached server yet
+      return TaskDetailState(task: cachedTask!, subtasks: cachedTask.subtasks);
+    }
+
+    try {
+      final r =
+          await Future.wait<dynamic>([_repo.get(arg), _repo.subtasks(arg)]);
+      final subs = r[1] as List<SubtaskResponse>;
+      final task = (r[0] as Tasks).copyWith(subtasks: subs);
+      _list.applyLocal(task);
+      return TaskDetailState(task: task, subtasks: subs);
+    } catch (_) {
+      if (cachedTask != null) {
+        return TaskDetailState(task: cachedTask, subtasks: cachedTask.subtasks);
+      }
+      rethrow;
+    }
   }
 
   void _set(TaskDetailState s) => state = AsyncData(s);
@@ -46,21 +71,13 @@ class TaskDetailController
   Future<void> toggleTask() async {
     final s = state.valueOrNull;
     if (s == null) return;
-    final next = s.task.copyWith(isCompleted: !s.task.isCompleted);
-    _set(s.copyWith(task: next));
-    _list.applyLocal(next);
-    try {
-      final saved = await _repo.update(arg, TasksPost.fromTask(next));
-      if (saved != null) {
-        final cur = state.valueOrNull ?? s;
-        final merged = saved.copyWith(subtasks: cur.subtasks);
-        _set(cur.copyWith(task: merged));
-        _list.applyLocal(merged);
-      }
-    } catch (_) {
-      _set(s);
-      _list.applyLocal(s.task);
-      rethrow;
+    await _list.toggle(s.task);
+    final curTask = ref
+        .read(tasksControllerProvider)
+        .valueOrNull
+        ?.firstWhereOrNull((t) => t.id == arg);
+    if (curTask != null) {
+      _set(s.copyWith(task: curTask));
     }
   }
 
@@ -101,13 +118,25 @@ class TaskDetailController
   Future<void> addSubtask(String title) async {
     final s = state.valueOrNull;
     if (s == null) return;
-    final created = await _repo.addSubtask(arg, title);
-    if (created == null) {
-      final subs = await _repo.subtasks(arg);
-      _setSubs(state.valueOrNull ?? s, subs);
-    } else {
-      final cur = state.valueOrNull ?? s;
-      _setSubs(cur, [...cur.subtasks, created]);
+    final tempSubId = -DateTime.now().millisecondsSinceEpoch;
+    final localSub = SubtaskResponse(id: tempSubId, taskId: arg, title: title, isCompleted: false);
+    final cur = state.valueOrNull ?? s;
+    final updatedSubs = [...cur.subtasks, localSub];
+    _setSubs(cur, updatedSubs);
+
+    if (arg < 0) {
+      // Local offline task: subtask is kept in local state & Hive
+      return;
+    }
+
+    try {
+      final created = await _repo.addSubtask(arg, title);
+      if (created != null) {
+        final nowCur = state.valueOrNull ?? cur;
+        _setSubs(nowCur, nowCur.subtasks.map((e) => e.id == tempSubId ? created : e).toList());
+      }
+    } catch (_) {
+      // Offline: keep localSub in memory & Hive
     }
   }
 
@@ -116,13 +145,12 @@ class TaskDetailController
     if (s == null) return;
     final next = st.copyWith(isCompleted: !st.isCompleted);
     _setSubs(s, _swap(s.subtasks, next));
+    if (st.id < 0 || arg < 0) return;
     try {
       await _repo.updateSubtask(
           st.id, SubtaskUpdate(title: st.title, isCompleted: next.isCompleted));
     } catch (_) {
-      final cur = state.valueOrNull ?? s;
-      _setSubs(cur, _swap(cur.subtasks, st));
-      rethrow;
+      // Offline: keep toggled state in Hive!
     }
   }
 
@@ -131,11 +159,11 @@ class TaskDetailController
     if (s == null) return;
     // Synchronous removal: Dismissible requires the row to leave the tree.
     _setSubs(s, s.subtasks.where((e) => e.id != st.id).toList());
+    if (st.id < 0 || arg < 0) return;
     try {
       await _repo.deleteSubtask(st.id);
     } catch (_) {
-      _setSubs(state.valueOrNull ?? s, s.subtasks);
-      rethrow;
+      // Offline: keep deleted in Hive!
     }
   }
 

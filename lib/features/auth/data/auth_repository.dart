@@ -7,16 +7,21 @@ import '../../../core/network/api_client.dart';
 import '../../../core/network/api_endpoints.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/network/token_storage.dart';
+import '../../../core/storage/offline_cache.dart';
 
 class AuthRepository {
-  AuthRepository(this._api, this._tokens, this._dio);
+  AuthRepository(this._api, this._tokens, this._dio, this._cache);
   final ApiClient _api;
   final TokenStorage _tokens;
   final Dio _dio;
+  final OfflineCache _cache;
 
   /// GET /auth/me
-  Future<UserPost> fetchMe() =>
-      _api.get(Api.me, parse: (d) => ApiClient.obj(d, UserPost.fromJson));
+  Future<UserPost> fetchMe() async {
+    final user = await _api.get(Api.me, parse: (d) => ApiClient.obj(d, UserPost.fromJson));
+    await _cache.saveUser(user);
+    return user;
+  }
 
   /// Default mock profile returned when accessing via developer secret key.
   static const devUser = UserPost(
@@ -33,14 +38,33 @@ class AuthRepository {
     }
     // On web, cookies are stored in the browser directly; on mobile, tokens are in secure storage.
     if (!kIsWeb && !await _tokens.hasSession) return null;
+
+    // Check offline cache first: return immediately so app opens with ZERO spinner!
+    final cachedUser = _cache.getUser();
+    if (cachedUser != null) {
+      // In the background, refresh profile if online without blocking app launch
+      fetchMe().then((fresh) => _cache.saveUser(fresh)).catchError((_) {});
+      return cachedUser;
+    }
+
     try {
-      return await fetchMe();
+      final user = await fetchMe();
+      await _cache.saveUser(user);
+      return user;
     } on ApiException catch (e) {
       if (e.isUnauthorized) {
         await _tokens.clear();
+        await _cache.clearUser();
         return null;
       }
-      rethrow; // offline etc. → keep tokens, surface error
+      final token = await _tokens.accessToken;
+      if (token != null) {
+        // We have a stored session token but were offline during initial launch
+        const fallback = UserPost(id: 'offline_user', email: 'offline@multido.local', name: 'Offline User');
+        await _cache.saveUser(fallback);
+        return fallback;
+      }
+      return null;
     }
   }
 
@@ -50,6 +74,7 @@ class AuthRepository {
       throw const ApiException('Invalid developer secret key.');
     }
     await _tokens.saveDevSession();
+    await _cache.saveUser(devUser);
     return devUser;
   }
 
@@ -134,9 +159,12 @@ class AuthRepository {
       {required String access, String? refresh}) async {
     await _tokens.save(access: access, refresh: refresh);
     try {
-      return await fetchMe();
+      final user = await fetchMe();
+      await _cache.saveUser(user);
+      return user;
     } catch (e) {
       await _tokens.clear();
+      await _cache.clearUser();
       rethrow;
     }
   }
@@ -152,6 +180,7 @@ class AuthRepository {
       // ignore: session is being discarded locally regardless
     } finally {
       await _tokens.clear();
+      await _cache.clearUser();
     }
   }
 }

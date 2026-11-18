@@ -143,7 +143,8 @@ class _GroupTaskEditorSheetState extends State<GroupTaskEditorSheet> {
         );
 
     return AnimatedPadding(
-      duration: const Duration(milliseconds: 150),
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOutCubic,
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
         decoration: AppDecor.sheet(p),

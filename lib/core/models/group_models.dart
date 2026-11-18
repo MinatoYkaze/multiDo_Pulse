@@ -375,7 +375,6 @@ class GroupTaskUpdate {
         'description': description,
         'priority': priority?.toJson(),
         'due_date': dateToJson(dueDate),
-        'is_completed': isCompleted,
         'completed': isCompleted,
         'assigned_to': assignedTo,
       });
