@@ -216,8 +216,10 @@ class GroupTasksController
   Future<void> toggle(GroupTaskResponse t) async {
     final next = t.copyWith(isCompleted: !t.isCompleted);
     _patch(next);
-    final log = ref.read(activityLogProvider.notifier);
-    next.isCompleted ? log.logDone('g:$arg:${t.id}') : log.undo('g:$arg:${t.id}');
+    try {
+      final log = ref.read(activityLogProvider.notifier);
+      next.isCompleted ? log.logDone('g:$arg:${t.id}') : log.undo('g:$arg:${t.id}');
+    } catch (_) {}
     if (t.id < 0) return;
     try {
       final saved = await _repo.updateTask(arg, t.id, GroupTaskUpdate(isCompleted: next.isCompleted));

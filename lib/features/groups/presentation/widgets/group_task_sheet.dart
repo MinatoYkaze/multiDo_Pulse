@@ -191,13 +191,15 @@ class _GroupTaskSheetState extends ConsumerState<GroupTaskSheet> {
                       value: task.isCompleted,
                       size: 24,
                       onChanged: () {
-                        final h = ref.read(hapticsProvider);
-                        if (!task.isCompleted) {
-                          h.success();
-                          ref.read(audioFxProvider).playChime();
-                        } else {
-                          h.light();
-                        }
+                        try {
+                          final h = ref.read(hapticsProvider);
+                          if (!task.isCompleted) {
+                            h.success();
+                            ref.read(audioFxProvider).playChime();
+                          } else {
+                            h.light();
+                          }
+                        } catch (_) {}
                         _run(() => ref.read(groupTasksProvider(widget.groupId).notifier).toggle(task));
                       },
                     ),

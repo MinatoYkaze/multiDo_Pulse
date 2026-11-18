@@ -60,13 +60,15 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
   }
 
   Future<void> _toggleTask(Tasks t) async {
-    final h = ref.read(hapticsProvider);
-    if (!t.isCompleted) {
-      h.success();
-      ref.read(audioFxProvider).playChime();
-    } else {
-      h.light();
-    }
+    try {
+      final h = ref.read(hapticsProvider);
+      if (!t.isCompleted) {
+        h.success();
+        ref.read(audioFxProvider).playChime();
+      } else {
+        h.light();
+      }
+    } catch (_) {}
     await _run(_ctl.toggleTask);
   }
 

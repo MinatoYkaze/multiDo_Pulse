@@ -300,15 +300,19 @@ class FocusController extends Notifier<FocusState> {
 
   /// `[20, 50, 40, 60, 20]`-style celebration from the milestone design.
   Future<void> _celebrate() async {
-    ref.read(audioFxProvider).playChime();
-    final h = ref.read(hapticsProvider);
-    h.heavy();
-    await Future<void>.delayed(const Duration(milliseconds: 120));
-    h.medium();
-    await Future<void>.delayed(const Duration(milliseconds: 100));
-    h.light();
-    await Future<void>.delayed(const Duration(milliseconds: 120));
-    await h.success();
+    try {
+      ref.read(audioFxProvider).playChime();
+    } catch (_) {}
+    try {
+      final h = ref.read(hapticsProvider);
+      h.heavy();
+      await Future<void>.delayed(const Duration(milliseconds: 120));
+      h.medium();
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      h.light();
+      await Future<void>.delayed(const Duration(milliseconds: 120));
+      await h.success();
+    } catch (_) {}
   }
 }
 

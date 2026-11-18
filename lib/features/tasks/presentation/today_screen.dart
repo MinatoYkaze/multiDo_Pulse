@@ -88,13 +88,15 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
   }
 
   Future<void> _toggle(Tasks t) async {
-    final h = ref.read(hapticsProvider);
-    if (!t.isCompleted) {
-      h.success();
-      ref.read(audioFxProvider).playChime();
-    } else {
-      h.light();
-    }
+    try {
+      final h = ref.read(hapticsProvider);
+      if (!t.isCompleted) {
+        h.success();
+        ref.read(audioFxProvider).playChime();
+      } else {
+        h.light();
+      }
+    } catch (_) {}
     try {
       await ref.read(tasksControllerProvider.notifier).toggle(t);
     } catch (e) {
