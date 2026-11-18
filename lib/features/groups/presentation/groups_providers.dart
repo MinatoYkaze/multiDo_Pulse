@@ -220,7 +220,8 @@ class GroupTasksController
     next.isCompleted ? log.logDone('g:$arg:${t.id}') : log.undo('g:$arg:${t.id}');
     if (t.id < 0) return;
     try {
-      await _repo.updateTask(arg, t.id, GroupTaskUpdate(isCompleted: next.isCompleted));
+      final saved = await _repo.updateTask(arg, t.id, GroupTaskUpdate(isCompleted: next.isCompleted));
+      if (saved != null) _patch(saved.copyWith(subtasks: t.subtasks));
       _refreshMine();
     } catch (_) {}
   }

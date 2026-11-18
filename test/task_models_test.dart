@@ -19,4 +19,35 @@ void main() {
     expect(t.copyWith(clearDueDate: true).dueDate, isNull);
     expect(t.copyWith(title: 'y').dueDate, t.dueDate);
   });
+
+  test('Tasks and GroupTaskResponse correctly parse isCompleted when completed is true but is_completed is false', () {
+    final taskJson = {
+      'id': 1,
+      'title': 'Test',
+      'completed': true,
+      'is_completed': false,
+    };
+    final task = Tasks.fromJson(taskJson);
+    expect(task.isCompleted, isTrue);
+
+    final groupTaskJson = {
+      'id': 2,
+      'group_id': 1,
+      'title': 'Group Task',
+      'completed': true,
+      'is_completed': false,
+    };
+    final groupTask = GroupTaskResponse.fromJson(groupTaskJson);
+    expect(groupTask.isCompleted, isTrue);
+
+    final groupSubtaskJson = {
+      'id': 3,
+      'task_id': 2,
+      'title': 'Sub',
+      'completed': true,
+      'is_completed': false,
+    };
+    final groupSubtask = GroupSubtaskResponse.fromJson(groupSubtaskJson);
+    expect(groupSubtask.isCompleted, isTrue);
+  });
 }

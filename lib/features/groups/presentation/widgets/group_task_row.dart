@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import '../../../../core/models/models.dart';
@@ -171,6 +172,7 @@ class _GroupTaskRowState extends State<GroupTaskRow> {
 
     final slidable = Slidable(
       key: ValueKey('slide-gt-${task.id}'),
+      dragStartBehavior: DragStartBehavior.start,
       startActionPane: ActionPane(
         motion: const BehindMotion(),
         extentRatio: 0.26,
@@ -257,10 +259,8 @@ class _Act extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CustomSlidableAction(
-      onPressed: (ctx) {
-        Slidable.of(ctx)?.close();
-        onTap();
-      },
+      autoClose: true,
+      onPressed: (_) => onTap(),
       backgroundColor: Colors.transparent,
       padding: EdgeInsets.zero,
       borderRadius: radius,

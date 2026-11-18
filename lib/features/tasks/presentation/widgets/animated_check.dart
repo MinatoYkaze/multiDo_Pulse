@@ -111,8 +111,8 @@ class _AnimatedCheckState extends State<AnimatedCheck>
       onTapCancel: () => setState(() => _pressed = false),
       onTap: widget.onChanged,
       child: SizedBox(
-        width: 44,
-        height: 44,
+        width: 48,
+        height: 48,
         child: Stack(
           alignment: Alignment.center,
           clipBehavior: Clip.none,

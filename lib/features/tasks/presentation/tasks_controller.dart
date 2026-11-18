@@ -249,9 +249,14 @@ class TasksController extends AsyncNotifier<List<Tasks>> {
     if (i < 0) return;
     if (!list[i].isCompleted && next.isCompleted) {
       ref.read(sessionDoneIdsProvider.notifier).update((s) => {...s, next.id});
-      ref.read(activityLogProvider.notifier).logDone('t:${next.id}');
+      try {
+        ref.read(activityLogProvider.notifier).logDone('t:${next.id}');
+      } catch (_) {}
     } else if (list[i].isCompleted && !next.isCompleted) {
-      ref.read(activityLogProvider.notifier).undo('t:${next.id}');
+      ref.read(sessionDoneIdsProvider.notifier).update((s) => s.where((id) => id != next.id).toSet());
+      try {
+        ref.read(activityLogProvider.notifier).undo('t:${next.id}');
+      } catch (_) {}
     }
     final copy = [...list]..[i] = next;
     state = AsyncData(copy);

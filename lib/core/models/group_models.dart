@@ -261,7 +261,7 @@ class GroupTaskResponse {
         title: (j['title'] ?? '') as String,
         description: j['description'] as String?,
         priority: Priority.fromJson(j['priority']),
-        isCompleted: (j['is_completed'] ?? j['completed'] ?? false) as bool,
+        isCompleted: (j['is_completed'] == true || j['completed'] == true),
         dueDate: parseDate(j['due_date']),
         assignedTo: (j['assigned_to'] ?? j['assignee_id']) as int?,
         assigneeName: j['assignee_name'] as String?,
@@ -406,7 +406,7 @@ class GroupSubtaskResponse {
         id: j['id'] as int,
         taskId: (j['task_id'] ?? j['group_task_id'] ?? 0) as int,
         title: (j['title'] ?? '') as String,
-        isCompleted: (j['is_completed'] ?? j['completed'] ?? false) as bool,
+        isCompleted: (j['is_completed'] == true || j['completed'] == true),
       );
 
   Map<String, dynamic> toJson() => {

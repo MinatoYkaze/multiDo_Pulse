@@ -28,7 +28,7 @@ class Tasks {
         title: (j['title'] ?? '') as String,
         description: (j['description'] ?? j['content']) as String?,
         priority: Priority.fromJson(j['priority']),
-        isCompleted: (j['is_completed'] ?? j['completed'] ?? false) as bool,
+        isCompleted: (j['is_completed'] == true || j['completed'] == true),
         dueDate: parseDate(j['due_date']),
         createdAt: parseDate(j['created_at']),
         subtasks: (j['subtasks'] as List? ?? const [])
@@ -105,7 +105,9 @@ class TasksPost {
         description: (j['description'] ?? j['content']) as String?,
         priority: Priority.fromJson(j['priority']),
         dueDate: parseDate(j['due_date']),
-        isCompleted: (j['is_completed'] ?? j['completed']) as bool?,
+        isCompleted: j['is_completed'] != null
+            ? (j['is_completed'] == true)
+            : (j['completed'] != null ? j['completed'] == true : null),
       );
 
   Map<String, dynamic> toJson() {
@@ -148,7 +150,7 @@ class SubtaskResponse {
         id: j['id'] as int,
         taskId: (j['task_id'] ?? 0) as int,
         title: (j['title'] ?? '') as String,
-        isCompleted: (j['is_completed'] ?? j['completed'] ?? false) as bool,
+        isCompleted: (j['is_completed'] == true || j['completed'] == true),
       );
 
   Map<String, dynamic> toJson() => {

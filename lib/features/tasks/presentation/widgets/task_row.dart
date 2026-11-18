@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:intl/intl.dart';
@@ -77,6 +78,7 @@ class _TaskRowState extends State<TaskRow> {
         enabled: widget.rich,
         child: Slidable(
           key: ValueKey('slide-${t.id}'),
+          dragStartBehavior: DragStartBehavior.start,
           startActionPane: ActionPane(
             motion: const BehindMotion(),
             extentRatio: 0.26,
@@ -280,10 +282,8 @@ class _SwipeAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CustomSlidableAction(
-      onPressed: (ctx) {
-        Slidable.of(ctx)?.close();
-        onTap();
-      },
+      autoClose: true,
+      onPressed: (_) => onTap(),
       backgroundColor: Colors.transparent,
       padding: const EdgeInsets.only(left: 6),
       child: Container(
