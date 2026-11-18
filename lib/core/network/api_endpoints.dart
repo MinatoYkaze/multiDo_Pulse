@@ -4,7 +4,7 @@ class Api {
 
   /// Default deployed FastAPI origin on Render.
   static const baseUrl =
-      String.fromEnvironment('API_BASE_URL', defaultValue: 'https://taskflow-api-v1-225t.onrender.com');
+      String.fromEnvironment('API_BASE_URL', defaultValue: 'https://multido-api.onrender.com');
 
   /// Custom URL scheme the backend redirects to after Google OAuth
   /// (e.g. obsidiantodo://auth?access_token=...&refresh_token=...).
