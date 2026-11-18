@@ -78,27 +78,9 @@ class AuthRepository {
     return devUser;
   }
 
-  /// GET /auth/google/login can answer with a 302 or with JSON {"url": ...}.
-  /// We support both and fall back to the endpoint itself.
+  /// Opens the backend Google OAuth endpoint directly so browser cookies and redirects stay aligned.
   Future<Uri> _resolveLoginUrl() async {
-    final fallback = Uri.parse('${Api.baseUrl}${Api.googleLogin}');
-    try {
-      final res = await _dio.get<dynamic>(
-        Api.googleLogin,
-        options: Options(
-          followRedirects: false,
-          validateStatus: (s) => s != null && s < 400,
-        ),
-      );
-      final loc = res.headers.value('location');
-      if (loc != null) return Uri.parse(loc);
-      final data = res.data;
-      if (data is Map) {
-        final u = data['url'] ?? data['auth_url'] ?? data['authorization_url'];
-        if (u is String) return Uri.parse(u);
-      }
-    } catch (_) {}
-    return fallback;
+    return Uri.parse('${Api.baseUrl}${Api.googleLogin}');
   }
 
   /// Full Google OAuth round-trip through the browser.
@@ -121,8 +103,11 @@ class AuthRepository {
         url: url.toString(),
         callbackUrlScheme: Api.callbackScheme,
       );
-    } catch (_) {
-      throw const ApiException('Sign-in was cancelled.');
+    } catch (e) {
+      if (e.toString().toLowerCase().contains('cancel')) {
+        throw const ApiException('Sign-in was cancelled.');
+      }
+      throw ApiException('Authentication error: $e');
     }
 
     final uri = Uri.parse(result);
