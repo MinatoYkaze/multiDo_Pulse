@@ -180,6 +180,8 @@ class GroupTasksController
     _cache.saveGroupTasks(arg, updated);
   }
 
+  void patchTask(GroupTaskResponse t) => _patch(t);
+
   Future<void> add(GroupTasksCreate b) async {
     final tempId = -DateTime.now().millisecondsSinceEpoch;
     final local = GroupTaskResponse(
@@ -302,16 +304,35 @@ class GroupSubtasksController extends AutoDisposeFamilyAsyncNotifier<
   List<GroupSubtaskResponse> get _cur => state.valueOrNull ?? const [];
 
   @override
-  Future<List<GroupSubtaskResponse>> build(GroupTaskKey arg) =>
-      _repo.subtasks(arg.groupId, arg.taskId);
+  Future<List<GroupSubtaskResponse>> build(GroupTaskKey arg) async {
+    final subs = await _repo.subtasks(arg.groupId, arg.taskId);
+    _syncParent(subs);
+    return subs;
+  }
+
+  void _syncParent(List<GroupSubtaskResponse> subs) {
+    try {
+      final tasks = ref.read(groupTasksProvider(arg.groupId)).valueOrNull;
+      if (tasks != null) {
+        final t = tasks.firstWhereOrNull((x) => x.id == arg.taskId);
+        if (t != null) {
+          ref.read(groupTasksProvider(arg.groupId).notifier).patchTask(t.copyWith(subtasks: subs));
+        }
+      }
+    } catch (_) {}
+  }
 
   Future<void> add(String title) async {
     final s = await _repo.addSubtask(
         arg.groupId, arg.taskId, GroupSubtaskCreate(title: title));
     if (s == null) {
-      state = AsyncData(await _repo.subtasks(arg.groupId, arg.taskId));
+      final subs = await _repo.subtasks(arg.groupId, arg.taskId);
+      state = AsyncData(subs);
+      _syncParent(subs);
     } else {
-      state = AsyncData([..._cur, s]);
+      final subs = [..._cur, s];
+      state = AsyncData(subs);
+      _syncParent(subs);
     }
   }
 
@@ -321,34 +342,43 @@ class GroupSubtasksController extends AutoDisposeFamilyAsyncNotifier<
   Future<void> toggle(GroupSubtaskResponse s) async {
     final old = _cur;
     final next = s.copyWith(isCompleted: !s.isCompleted);
-    state = AsyncData(_swap(next));
+    final swapped = _swap(next);
+    state = AsyncData(swapped);
+    _syncParent(swapped);
     try {
       await _repo.updateSubtask(
           arg.groupId, s.id, GroupSubtaskUpdate(isCompleted: next.isCompleted));
     } catch (_) {
       state = AsyncData(old);
+      _syncParent(old);
       rethrow;
     }
   }
 
   Future<void> rename(GroupSubtaskResponse s, String title) async {
     final old = _cur;
-    state = AsyncData(_swap(s.copyWith(title: title)));
+    final swapped = _swap(s.copyWith(title: title));
+    state = AsyncData(swapped);
+    _syncParent(swapped);
     try {
       await _repo.updateSubtask(arg.groupId, s.id, GroupSubtaskUpdate(title: title));
     } catch (_) {
       state = AsyncData(old);
+      _syncParent(old);
       rethrow;
     }
   }
 
   Future<void> remove(GroupSubtaskResponse s) async {
     final old = _cur;
-    state = AsyncData(old.where((x) => x.id != s.id).toList());
+    final filtered = old.where((x) => x.id != s.id).toList();
+    state = AsyncData(filtered);
+    _syncParent(filtered);
     try {
       await _repo.deleteSubtask(arg.groupId, s.id);
     } catch (_) {
       state = AsyncData(old);
+      _syncParent(old);
       rethrow;
     }
   }

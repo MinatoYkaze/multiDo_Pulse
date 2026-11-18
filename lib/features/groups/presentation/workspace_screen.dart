@@ -219,7 +219,7 @@ class _WorkspaceScreenState extends ConsumerState<WorkspaceScreen> {
     if (source != null) {
       openCount = source.where((x) => !x.isCompleted).length;
       doneCount = source.length - openCount;
-      int prio(Priority x) => x == Priority.high ? 0 : (x == Priority.medium ? 1 : 2);
+      int prio(Priority x) => x.index;
       visible = source
           .where((x) => switch (_status) {
                 _Status.open => !x.isCompleted,

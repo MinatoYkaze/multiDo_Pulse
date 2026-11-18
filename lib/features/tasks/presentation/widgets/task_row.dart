@@ -176,54 +176,61 @@ class _Card extends StatelessWidget {
         duration: const Duration(milliseconds: 300),
         decoration: BoxDecoration(
             color: bg, borderRadius: radius, border: Border.all(color: border)),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: radius,
-            onTap: onOpen,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(4, 6, 16, 6),
-              child: Row(children: [
-                AnimatedCheck(
-                    value: done, onChanged: onToggle, rich: rich, size: 20),
-                const SizedBox(width: 2),
-                Expanded(
-                  child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        HeroTitle(
-                          tag: 'task-title-${task.id}',
-                          text: task.title,
-                          fromStyle: TaskFmt.listTitle(context, done: false),
-                          toStyle: TaskFmt.detailTitle(context),
-                          child: StrikeText(
-                            task.title,
-                            struck: done,
-                            style: listStyle,
-                            lineColor: p.textMuted,
-                          ),
-                        ),
-                        if (subtasks.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: Row(children: [
-                              Icon(Icons.checklist_rounded,
-                                  size: 13, color: p.textMuted),
-                              const SizedBox(width: 4),
-                              Text(
-                                  '${subtasks.where((s) => s.isCompleted).length}/${subtasks.length}',
-                                  style: t.bodySmall
-                                      ?.copyWith(color: p.textMuted)),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(4, 6, 16, 6),
+          child: Row(children: [
+            AnimatedCheck(
+                value: done, onChanged: onToggle, rich: rich, size: 20),
+            const SizedBox(width: 2),
+            Expanded(
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: radius,
+                  onTap: onOpen,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(children: [
+                      Expanded(
+                        child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              HeroTitle(
+                                tag: 'task-title-${task.id}',
+                                text: task.title,
+                                fromStyle: TaskFmt.listTitle(context, done: false),
+                                toStyle: TaskFmt.detailTitle(context),
+                                child: StrikeText(
+                                  task.title,
+                                  struck: done,
+                                  style: listStyle,
+                                  lineColor: p.textMuted,
+                                ),
+                              ),
+                              if (subtasks.isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 2),
+                                  child: Row(children: [
+                                    Icon(Icons.checklist_rounded,
+                                        size: 13, color: p.textMuted),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                        '${subtasks.where((s) => s.isCompleted).length}/${subtasks.length}',
+                                        style: t.bodySmall
+                                            ?.copyWith(color: p.textMuted)),
+                                  ]),
+                                ),
                             ]),
-                          ),
-                      ]),
+                      ),
+                      const SizedBox(width: 12),
+                      _Trailing(task: task),
+                    ]),
+                  ),
                 ),
-                const SizedBox(width: 12),
-                _Trailing(task: task),
-              ]),
+              ),
             ),
-          ),
+          ]),
         ),
       ),
     );
@@ -273,7 +280,10 @@ class _SwipeAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CustomSlidableAction(
-      onPressed: (_) => onTap(),
+      onPressed: (ctx) {
+        Slidable.of(ctx)?.close();
+        onTap();
+      },
       backgroundColor: Colors.transparent,
       padding: const EdgeInsets.only(left: 6),
       child: Container(

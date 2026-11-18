@@ -71,26 +71,27 @@ class _GroupTaskRowState extends State<GroupTaskRow> {
         (TaskFmt.hasTime(due) ? due.isBefore(DateTime.now()) : due.isBefore(TaskFmt.startOfToday()));
     final name = widget.assignee?.displayName ?? task.assigneeName;
 
-    final card = GestureDetector(
-      onTap: widget.onOpen,
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 250),
-        opacity: done ? 0.55 : 1,
-        child: Container(
-          decoration: AppDecor.card(p, dimmed: done),
-          child: ClipRRect(
-            borderRadius: radius,
-            child: Column(children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
-                child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: AnimatedCheck(
-                        value: done, onChanged: widget.onToggle, size: 20, rich: widget.rich),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
+    final card = AnimatedOpacity(
+      duration: const Duration(milliseconds: 250),
+      opacity: done ? 0.55 : 1,
+      child: Container(
+        decoration: AppDecor.card(p, dimmed: done),
+        child: ClipRRect(
+          borderRadius: radius,
+          child: Column(children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: AnimatedCheck(
+                      value: done, onChanged: widget.onToggle, size: 20, rich: widget.rich),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: widget.onOpen,
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Expanded(
@@ -115,10 +116,14 @@ class _GroupTaskRowState extends State<GroupTaskRow> {
                       ],
                     ]),
                   ),
-                ]),
-              ),
-              // footer strip: assignee · due · subtask count
-              Container(
+                ),
+              ]),
+            ),
+            // footer strip: assignee · due · subtask count
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: widget.onOpen,
+              child: Container(
                 color: p.isDark
                     ? Colors.white.withValues(alpha: 0.025)
                     : Colors.black.withValues(alpha: 0.025),
@@ -158,8 +163,8 @@ class _GroupTaskRowState extends State<GroupTaskRow> {
                   ],
                 ]),
               ),
-            ]),
-          ),
+            ),
+          ]),
         ),
       ),
     );
@@ -227,7 +232,7 @@ class _Tag extends StatelessWidget {
         borderRadius: BorderRadius.circular(context.palette.isTerminal ? 2 : 6),
       ),
       child: Text(
-        priority == Priority.high ? 'P1 CRITICAL' : 'P2',
+        priority.tag,
         style: Theme.of(context)
             .textTheme
             .labelSmall
@@ -252,7 +257,10 @@ class _Act extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CustomSlidableAction(
-      onPressed: (_) => onTap(),
+      onPressed: (ctx) {
+        Slidable.of(ctx)?.close();
+        onTap();
+      },
       backgroundColor: Colors.transparent,
       padding: EdgeInsets.zero,
       borderRadius: radius,
