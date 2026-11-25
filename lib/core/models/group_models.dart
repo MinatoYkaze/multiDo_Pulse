@@ -127,101 +127,96 @@ class GroupMemberResponse {
 /// Body for POST /groups/{group_id}/invite.
 class GroupInvitationBase {
   final String email;
-  final Role role;
-  const GroupInvitationBase({required this.email, this.role = Role.member});
+  final Role? role;
+  const GroupInvitationBase({required this.email, this.role});
   factory GroupInvitationBase.fromJson(Map<String, dynamic> j) =>
       GroupInvitationBase(
-          email: j['email'] as String,
-          role: j['role'] == null ? Role.member : Role.fromJson(j['role']));
+        email: j['email'] as String,
+        role: j['role'] == null ? null : Role.fromJson(j['role']),
+      );
   Map<String, dynamic> toJson() => {'email': email};
 }
 
-class GroupInvitationResponse {
-  final int? id;
-  final int? groupId;
-  final String email;
-  final Role role;
-  final String? token;
+/// Body for PATCH /groups/invitations/{invitation_id}/respond.
+class GroupInvitationRespond {
   final InvitationStatus status;
-  final DateTime? expiresAt;
-  final DateTime? createdAt;
-  final bool isResend;
+  const GroupInvitationRespond({required this.status});
+  factory GroupInvitationRespond.fromJson(Map<String, dynamic> j) =>
+      GroupInvitationRespond(status: InvitationStatus.fromJson(j['status']));
+  Map<String, dynamic> toJson() => {'status': status.toJson()};
+}
 
-  const GroupInvitationResponse({
-    this.id,
-    this.groupId,
-    required this.email,
-    this.role = Role.member,
-    this.token,
+/// Response schema for in-app group invitations:
+/// POST /groups/{group_id}/invite, GET /groups/invitations,
+/// and PATCH /groups/invitations/{invitation_id}/respond.
+class InGroupInvitationResponse {
+  final int id;
+  final int groupId;
+  final int invitedUserId;
+  final int invitedBy;
+  final InvitationStatus status;
+  final DateTime createdAt;
+  final DateTime? respondedAt;
+  final DateTime expiresAt;
+  final String? groupName;
+  final String? inviterName;
+  final String? inviterEmail;
+
+  const InGroupInvitationResponse({
+    required this.id,
+    required this.groupId,
+    required this.invitedUserId,
+    required this.invitedBy,
     this.status = InvitationStatus.pending,
-    this.expiresAt,
-    this.createdAt,
-    this.isResend = false,
+    required this.createdAt,
+    this.respondedAt,
+    required this.expiresAt,
+    this.groupName,
+    this.inviterName,
+    this.inviterEmail,
   });
 
-  factory GroupInvitationResponse.fromJson(Map<String, dynamic> j) =>
-      GroupInvitationResponse(
-        id: j['id'] as int?,
-        groupId: j['group_id'] as int?,
-        email: (j['email'] ?? j['invited_email'] ?? '') as String,
-        role: Role.fromJson(j['role']),
-        token: j['token'] as String?,
+  String? get token => null;
+  bool get isResend => false;
+  String get email => inviterEmail ?? '';
+  Role get role => Role.member;
+
+  bool get isExpired =>
+      status == InvitationStatus.expired ||
+      (status == InvitationStatus.pending &&
+          DateTime.now().toUtc().isAfter(expiresAt.toUtc()));
+
+  factory InGroupInvitationResponse.fromJson(Map<String, dynamic> j) =>
+      InGroupInvitationResponse(
+        id: j['id'] as int,
+        groupId: j['group_id'] as int,
+        invitedUserId: j['invited_user_id'] as int,
+        invitedBy: j['invited_by'] as int,
         status: InvitationStatus.fromJson(j['status']),
-        expiresAt: parseDate(j['expires_at']),
-        createdAt: parseDate(j['created_at']),
-        isResend: (j['is_resend'] ?? false) as bool,
+        createdAt: parseDate(j['created_at']) ?? DateTime.now().toUtc(),
+        respondedAt: parseDate(j['responded_at']),
+        expiresAt: parseDate(j['expires_at']) ?? DateTime.now().toUtc(),
+        groupName: j['group_name'] as String?,
+        inviterName: j['inviter_name'] as String?,
+        inviterEmail: j['inviter_email'] as String?,
       );
 
   Map<String, dynamic> toJson() => {
         'id': id,
         'group_id': groupId,
-        'email': email,
-        'role': role.toJson(),
-        'token': token,
+        'invited_user_id': invitedUserId,
+        'invited_by': invitedBy,
         'status': status.toJson(),
-        'expires_at': dateToJson(expiresAt),
         'created_at': dateToJson(createdAt),
-        'is_resend': isResend,
-      };
-}
-
-/// Preview of a project invitation before acceptance (Requirement 5).
-class InvitationPreview {
-  final int groupId;
-  final String groupName;
-  final String? groupDescription;
-  final String? inviterEmail;
-  final String? inviterName;
-  final DateTime? expiresAt;
-
-  const InvitationPreview({
-    required this.groupId,
-    required this.groupName,
-    this.groupDescription,
-    this.inviterEmail,
-    this.inviterName,
-    this.expiresAt,
-  });
-
-  factory InvitationPreview.fromJson(Map<String, dynamic> j) =>
-      InvitationPreview(
-        groupId: (j['group_id'] ?? 0) as int,
-        groupName: (j['group_name'] ?? 'Project') as String,
-        groupDescription: j['group_description'] as String?,
-        inviterEmail: j['inviter_email'] as String?,
-        inviterName: j['inviter_name'] as String?,
-        expiresAt: parseDate(j['expires_at']),
-      );
-
-  Map<String, dynamic> toJson() => {
-        'group_id': groupId,
-        'group_name': groupName,
-        'group_description': groupDescription,
-        'inviter_email': inviterEmail,
-        'inviter_name': inviterName,
+        'responded_at': dateToJson(respondedAt),
         'expires_at': dateToJson(expiresAt),
+        if (groupName != null) 'group_name': groupName,
+        if (inviterName != null) 'inviter_name': inviterName,
+        if (inviterEmail != null) 'inviter_email': inviterEmail,
       };
 }
+
+typedef GroupInvitationResponse = InGroupInvitationResponse;
 
 class GroupTaskResponse {
   final int id;

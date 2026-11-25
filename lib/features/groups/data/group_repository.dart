@@ -48,11 +48,11 @@ class GroupRepository {
       );
 
   /// POST /groups/{group_id}/invite
-  Future<GroupInvitationResponse> invite(int groupId, String email) => _api.post(
+  Future<InGroupInvitationResponse> invite(int groupId, String email) =>
+      _api.post(
         Api.groupInvite(groupId),
         body: GroupInvitationBase(email: email).toJson(),
-        receiveTimeout: const Duration(seconds: 45),
-        parse: (d) => ApiClient.obj(d, GroupInvitationResponse.fromJson),
+        parse: (d) => ApiClient.obj(d, InGroupInvitationResponse.fromJson),
       );
 
   /// POST /groups/{group_id}/leave

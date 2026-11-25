@@ -56,16 +56,15 @@ class _InviteMemberDialogState extends ConsumerState<InviteMemberDialog> {
 
     final cleanEmail = _emailController.text.trim().toLowerCase();
     try {
-      final res = await ref
+      await ref
           .read(groupMembersControllerProvider(widget.groupId).notifier)
           .invite(cleanEmail);
 
       if (mounted) {
         setState(() {
           _loading = false;
-          _success = res.isResend
-              ? 'Invitation re-sent! An email with the join link was dispatched to $cleanEmail.'
-              : 'Invitation sent! An email with the join link was dispatched to $cleanEmail.';
+          _success =
+              'Invitation sent to $cleanEmail! They can accept it from their in-app Invitations inbox.';
         });
         await Future.delayed(const Duration(milliseconds: 1500));
         if (mounted) Navigator.of(context).pop(true);
@@ -80,36 +79,33 @@ class _InviteMemberDialogState extends ConsumerState<InviteMemberDialog> {
               'Connection timed out. The server took too long to connect (it may be waking up). Please retry in a few moments.';
         } else if (apiErr.isReceiveTimeout) {
           message =
-              'The server took too long to respond. The invitation status is unknown. Please check your project members list before retrying.';
-        } else if (rawLower.contains('email delivery failed') ||
-            rawLower.contains('failed to send invitation')) {
-          message =
-              'Could not dispatch the invitation email (SMTP error). Please check your email configuration on the server or try again later.';
+              'The server took too long to respond. Please check your project members list before retrying.';
+        } else if (apiErr.isUnauthorized) {
+          message = 'Your session has expired. Please sign in again.';
+        } else if (apiErr.isForbidden) {
+          message = message.isNotEmpty
+              ? message
+              : 'Permission denied: only the project owner can invite registered members.';
         } else if (rawLower.contains('does not exist') ||
+            rawLower.contains("doesn't exist") ||
             rawLower.contains("dosen't exist") ||
-            rawLower.contains('user does not exists')) {
+            rawLower.contains('not found')) {
           message =
-              'No registered account found with this email. MultiDo requires collaborators to create an account before being invited to a project.';
-        } else if (rawLower.contains('not validate') ||
-            rawLower.contains('nnot loggined') ||
-            rawLower.contains('not authorized')) {
-          message = 'Only the project owner has permission to invite members.';
+              'No registered account found with this email. Collaborators must create an account before being invited.';
         } else if (rawLower.contains('cannot invite yourself')) {
           message = 'You cannot invite yourself to your own project.';
-        } else if (rawLower.contains('already sent')) {
-          message = 'An invitation has already been sent to this email address.';
-        } else if (rawLower.contains('already exists in the group')) {
+        } else if (rawLower.contains('already sent') ||
+            rawLower.contains('already invited') ||
+            rawLower.contains('pending invitation')) {
+          message = 'A pending invitation already exists for this user.';
+        } else if (rawLower.contains('already exists in the group') ||
+            rawLower.contains('already a member')) {
           message = 'This user is already a member of this project.';
         } else if (rawLower.contains('only group of 3') ||
-            rawLower.contains('limit of 3')) {
+            rawLower.contains('limit of 3') ||
+            rawLower.contains('capacity') ||
+            rawLower.contains('full')) {
           message = 'This project has reached the maximum limit of 3 members.';
-        } else if (apiErr.statusCode == 403) {
-          message =
-              'Permission denied: only the project owner can invite registered members.';
-        } else if (apiErr.statusCode == 500 &&
-            rawLower.contains('failed to send invitation')) {
-          message =
-              'The server could not deliver the email: SMTP network connection issue. Please check server email settings.';
         }
         setState(() {
           _loading = false;

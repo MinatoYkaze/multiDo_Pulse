@@ -26,10 +26,12 @@ enum Role {
 enum InvitationStatus {
   pending,
   accepted,
-  declined,
+  rejected,
   expired;
 
   String toJson() => name;
-  static InvitationStatus fromJson(dynamic v) =>
-      enumByName(InvitationStatus.values, v, InvitationStatus.pending);
+  static InvitationStatus fromJson(dynamic v) {
+    if (v == 'declined') return InvitationStatus.rejected;
+    return enumByName(InvitationStatus.values, v, InvitationStatus.pending);
+  }
 }

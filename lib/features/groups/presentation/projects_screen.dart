@@ -15,6 +15,7 @@ import '../../../core/widgets/shimmer_progress_bar.dart';
 import '../../../core/widgets/sliding_segmented.dart';
 import '../../tasks/presentation/tasks_controller.dart' show richMotionProvider;
 import '../../tasks/presentation/widgets/motion_widgets.dart';
+import 'groups_controller.dart' show invitationsControllerProvider;
 import 'groups_providers.dart';
 import 'widgets/group_editor_sheet.dart';
 
@@ -100,12 +101,36 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
     final pinned = ref.watch(pinnedGroupsProvider);
     final rich = ref.watch(richMotionProvider);
     final navPad = MediaQuery.paddingOf(context).bottom;
+    final pendingInvitesCount = ref.watch(
+      invitationsControllerProvider.select(
+        (async) =>
+            async.valueOrNull
+                ?.where(
+                    (i) => i.status == InvitationStatus.pending && !i.isExpired)
+                .length ??
+            0,
+      ),
+    );
 
     return Scaffold(
       body: SafeArea(
         bottom: false,
         child: Column(children: [
-          const AppHeader(title: 'Pulse', subtitle: 'Projects'),
+          AppHeader(
+            title: 'Pulse',
+            subtitle: 'Projects',
+            actions: [
+              IconButton(
+                tooltip: 'Invitations',
+                onPressed: () => context.push('/invitations'),
+                icon: Badge(
+                  isLabelVisible: pendingInvitesCount > 0,
+                  label: Text('$pendingInvitesCount'),
+                  child: Icon(Icons.mail_outline_rounded, color: p.textPrimary),
+                ),
+              ),
+            ],
+          ),
           Expanded(
             child: async.when(
               loading: () => const Padding(

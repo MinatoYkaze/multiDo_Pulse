@@ -16,6 +16,16 @@ class ProjectsDashboardScreen extends ConsumerWidget {
     final p = context.palette;
     final t = Theme.of(context).textTheme;
     final groupsAsync = ref.watch(groupsControllerProvider);
+    final pendingInvitesCount = ref.watch(
+      invitationsControllerProvider.select(
+        (async) =>
+            async.valueOrNull
+                ?.where(
+                    (i) => i.status == InvitationStatus.pending && !i.isExpired)
+                .length ??
+            0,
+      ),
+    );
 
     return Scaffold(
       backgroundColor: p.base,
@@ -31,6 +41,15 @@ class ProjectsDashboardScreen extends ConsumerWidget {
           ),
         ),
         actions: [
+          IconButton(
+            tooltip: 'Invitations',
+            onPressed: () => context.push('/invitations'),
+            icon: Badge(
+              isLabelVisible: pendingInvitesCount > 0,
+              label: Text('$pendingInvitesCount'),
+              child: Icon(Icons.mail_outline_rounded, color: p.textPrimary),
+            ),
+          ),
           IconButton(
             icon: Icon(Icons.add_circle_outline, color: p.accent),
             tooltip: 'New Project',
@@ -120,6 +139,16 @@ class ProjectsDashboardScreen extends ConsumerWidget {
                       icon: const Icon(Icons.add),
                       label: const Text('CREATE PROJECT'),
                       onPressed: () => CreateGroupDialog.show(context),
+                    ),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.mail_outline_rounded),
+                      label: Text(
+                        pendingInvitesCount > 0
+                            ? 'VIEW INVITATIONS ($pendingInvitesCount)'
+                            : 'VIEW INVITATIONS',
+                      ),
+                      onPressed: () => context.push('/invitations'),
                     ),
                   ],
                 ),

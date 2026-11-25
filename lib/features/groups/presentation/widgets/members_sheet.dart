@@ -272,9 +272,7 @@ class _InviteSheetState extends ConsumerState<InviteSheet> {
     final p = context.palette;
     final t = Theme.of(context).textTheme;
     final sent = _sent;
-    final link = sent?.token == null
-        ? null
-        : '${Api.baseUrl}${Api.acceptInvitation(sent!.token!)}';
+    final link = sent?.token;
 
     return AnimatedPadding(
       duration: const Duration(milliseconds: 150),
@@ -298,8 +296,23 @@ class _InviteSheetState extends ConsumerState<InviteSheet> {
                         const SizedBox(height: 4),
                         Text('${sent.email} · ${_roleLabel(sent.role)}',
                             style: t.bodySmall?.copyWith(color: p.textMuted)),
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: AppDecor.card(p),
+                          child: Row(children: [
+                            Icon(Icons.inbox_outlined, size: 18, color: p.accent),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Sent to collaborator. They can review and accept it in their Invitations inbox.',
+                                style: t.bodySmall?.copyWith(color: p.textMuted),
+                              ),
+                            ),
+                          ]),
+                        ),
                         if (link != null) ...[
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 12),
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: AppDecor.card(p),

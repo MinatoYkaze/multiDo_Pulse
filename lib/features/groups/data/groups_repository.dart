@@ -69,9 +69,7 @@ class GroupsRepository {
   Future<GroupInvitationResponse> invite(int g, GroupInvitationBase b) =>
       _api.post(Api.groupInvite(g),
           body: b.toJson(),
-          parse: (d) => d is Map
-              ? GroupInvitationResponse.fromJson(Map<String, dynamic>.from(d))
-              : GroupInvitationResponse(email: b.email, role: b.role));
+          parse: (d) => ApiClient.obj(d, GroupInvitationResponse.fromJson));
   Future<void> leave(int g) => _api.post<void>(Api.groupLeave(g), parse: (_) {});
   Future<void> removeMember(int g, int userId) =>
       _api.delete(Api.groupMember(g, userId), parse: (_) {});
