@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/models.dart';
 import '../../auth/presentation/auth_controller.dart';
 import '../data/group_repository.dart';
+import '../data/invitation_repository.dart';
 
 // ---------------------------------------------------------------------------
 // Groups List Controller
@@ -115,7 +116,7 @@ class GroupMembersController
     }
   }
 
-  Future<GroupInvitationResponse> invite(String email) async {
+  Future<InGroupInvitationResponse> invite(String email) async {
     final res = await _repo.invite(arg, email);
     await refresh();
     return res;
@@ -320,4 +321,57 @@ class GroupTasksController
 final groupTasksControllerProvider = AsyncNotifierProvider.family<
     GroupTasksController, List<GroupTaskResponse>, int>(
   GroupTasksController.new,
+);
+
+// ---------------------------------------------------------------------------
+// Received Invitations Controller
+// ---------------------------------------------------------------------------
+
+class InvitationsController
+    extends AsyncNotifier<List<InGroupInvitationResponse>> {
+  InvitationRepository get _repo => ref.read(invitationRepositoryProvider);
+  List<InGroupInvitationResponse> get _current =>
+      state.valueOrNull ?? const <InGroupInvitationResponse>[];
+
+  @override
+  Future<List<InGroupInvitationResponse>> build() async {
+    final uid =
+        ref.watch(currentUserProvider.select((u) => u?.id ?? u?.email));
+    if (uid == null) return const <InGroupInvitationResponse>[];
+    return await _repo.getInvitations();
+  }
+
+  Future<void> refresh() async {
+    try {
+      final list = await _repo.getInvitations();
+      state = AsyncData(list);
+    } catch (e, st) {
+      if (!state.hasValue) state = AsyncError(e, st);
+      rethrow;
+    }
+  }
+
+  Future<InGroupInvitationResponse> respond(
+    int invitationId,
+    InvitationStatus status,
+  ) async {
+    final updated = await _repo.respond(invitationId, status);
+    final list = _current;
+    final idx = list.indexWhere((i) => i.id == invitationId);
+    if (idx >= 0) {
+      final copy = [...list]..[idx] = updated;
+      state = AsyncData(copy);
+    } else {
+      state = AsyncData([updated, ...list]);
+    }
+    if (status == InvitationStatus.accepted) {
+      await ref.read(groupsControllerProvider.notifier).refresh();
+    }
+    return updated;
+  }
+}
+
+final invitationsControllerProvider = AsyncNotifierProvider<
+    InvitationsController, List<InGroupInvitationResponse>>(
+  InvitationsController.new,
 );

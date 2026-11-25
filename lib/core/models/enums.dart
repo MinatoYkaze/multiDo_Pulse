@@ -26,7 +26,7 @@ enum Role {
 enum InvitationStatus {
   pending,
   accepted,
-  declined,
+  rejected,
   expired;
 
   String toJson() => name;
