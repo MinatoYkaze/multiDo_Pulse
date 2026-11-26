@@ -115,7 +115,8 @@ class AuthRepository {
 
       final account = await _googleSignIn.signIn();
       if (account == null) {
-        throw const ApiException('Sign-in was cancelled.');
+        throw const ApiException(
+            'Sign-in was cancelled. (Tip: Tap the Pulse logo 5 times for Developer Access).');
       }
 
       final auth = await account.authentication;
@@ -145,9 +146,12 @@ class AuthRepository {
             return await signInWithTokens(access: access, refresh: refresh);
           }
         } on DioException catch (dioErr) {
-          // If the backend has not deployed /auth/google/verify yet (e.g. 404), fallback to browser
+          // If backend hasn't deployed /auth/google/verify yet, notify clearly
           if (dioErr.response?.statusCode == 404) {
-            return await _signInWithGoogleBrowser();
+            throw const ApiException(
+              'Backend is still deploying on Render (/auth/google/verify not active yet).\n'
+              'Please check Render dashboard or use Developer Access (tap logo 5 times).',
+            );
           }
           throw ApiException.from(dioErr);
         }
@@ -155,21 +159,36 @@ class AuthRepository {
     } catch (e) {
       if (e is ApiException) rethrow;
       final s = e.toString().toLowerCase();
-      if (s.contains('cancel') ||
-          s.contains('sign_in_canceled') ||
-          s.contains('canceled')) {
-        throw const ApiException('Sign-in was cancelled.');
-      }
+
       debugPrint('[AuthRepository] Native Google Sign-In notice: $e');
-      if (s.contains('10') || s.contains('developer_error')) {
-        debugPrint(
-          '[AuthRepository] Google Sign-In ApiException 10 (DEVELOPER_ERROR): '
-          'Please ensure the Android SHA-1 fingerprint (7C:A9:22:83:80:68:4D:7C:23:D7:56:D0:2E:48:5F:DC:E2:9A:51:24) '
-          'is registered in Google Cloud Console for com.example.multido. '
-          'Attempting browser OAuth fallback...',
+
+      // ApiException 12501: Google Play Services cancelled/rejected the sign-in
+      if (s.contains('12501') || s.contains('sign_in_canceled')) {
+        throw const ApiException(
+          'Google Sign-In rejected by Google Play Services (code 12501).\n'
+          'Common causes:\n'
+          '1. In Google Cloud Console, add your email under "OAuth consent screen" -> "Test users".\n'
+          '2. Google Cloud credentials take ~5-15 min to propagate.\n'
+          '(Tip: Tap the Pulse logo 5 times to bypass sign-in instantly).',
         );
       }
-      // If native SDK encounters platform issue (e.g. non-Play emulator or missing SHA-1), fallback to browser
+
+      // ApiException 10: Missing SHA-1 in Google Cloud Console
+      if (s.contains('10') || s.contains('developer_error')) {
+        throw const ApiException(
+          'Google Sign-In setup error (code 10: DEVELOPER_ERROR).\n'
+          'Ensure Android SHA-1 (7C:A9:22:83...) is registered in Google Cloud Console for com.example.multido.\n'
+          '(Tip: Tap the Pulse logo 5 times to bypass sign-in instantly).',
+        );
+      }
+
+      if (s.contains('cancel') || s.contains('canceled')) {
+        throw const ApiException(
+          'Sign-in was cancelled. (Tip: Tap the Pulse logo 5 times for Developer Access).',
+        );
+      }
+
+      // Fallback to browser OAuth for platform limitations
       return await _signInWithGoogleBrowser();
     }
 
