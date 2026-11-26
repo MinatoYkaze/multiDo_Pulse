@@ -160,7 +160,16 @@ class AuthRepository {
           s.contains('canceled')) {
         throw const ApiException('Sign-in was cancelled.');
       }
-      // If native SDK encounters platform issue (e.g. non-Play emulator), fallback to browser
+      debugPrint('[AuthRepository] Native Google Sign-In notice: $e');
+      if (s.contains('10') || s.contains('developer_error')) {
+        debugPrint(
+          '[AuthRepository] Google Sign-In ApiException 10 (DEVELOPER_ERROR): '
+          'Please ensure the Android SHA-1 fingerprint (7C:A9:22:83:80:68:4D:7C:23:D7:56:D0:2E:48:5F:DC:E2:9A:51:24) '
+          'is registered in Google Cloud Console for com.example.multido. '
+          'Attempting browser OAuth fallback...',
+        );
+      }
+      // If native SDK encounters platform issue (e.g. non-Play emulator or missing SHA-1), fallback to browser
       return await _signInWithGoogleBrowser();
     }
 
@@ -178,7 +187,9 @@ class AuthRepository {
       );
     } catch (e) {
       if (e.toString().toLowerCase().contains('cancel')) {
-        throw const ApiException('Sign-in was cancelled.');
+        throw const ApiException(
+          'Sign-in was cancelled. (Tip: You can also bypass sign-in instantly by tapping the Pulse logo 5 times).',
+        );
       }
       throw ApiException('Authentication error: $e');
     }
