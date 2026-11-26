@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/models/models.dart';
 import '../../../core/network/api_client.dart';
@@ -78,6 +79,12 @@ class AuthRepository {
     return devUser;
   }
 
+  late final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: const ['email', 'profile'],
+    serverClientId:
+        Api.googleServerClientId.isNotEmpty ? Api.googleServerClientId : null,
+  );
+
   /// Opens the backend Google OAuth endpoint directly with mobile callback scheme.
   Future<Uri> _resolveLoginUrl() async {
     return Uri.parse('${Api.baseUrl}${Api.googleLogin}').replace(queryParameters: {
@@ -85,9 +92,11 @@ class AuthRepository {
     });
   }
 
-  /// Full Google OAuth round-trip through the browser.
+  /// Full Google OAuth sign-in.
   /// On web: redirects current window to Google OAuth endpoint with current web origin.
-  /// On mobile: uses FlutterWebAuth2 with custom scheme redirect.
+  /// On mobile: uses native Google Sign-In SDK (Google Play Services) to obtain
+  /// tokens directly without browser redirect issues, then verifies via /auth/google/verify.
+  /// Seamlessly falls back to browser OAuth if native services are unavailable.
   Future<UserPost?> signInWithGoogle() async {
     if (kIsWeb) {
       final origin = Uri.base.origin;
@@ -98,6 +107,68 @@ class AuthRepository {
       return null;
     }
 
+    // Native Mobile Google Sign-In
+    try {
+      try {
+        await _googleSignIn.signOut();
+      } catch (_) {}
+
+      final account = await _googleSignIn.signIn();
+      if (account == null) {
+        throw const ApiException('Sign-in was cancelled.');
+      }
+
+      final auth = await account.authentication;
+      final idToken = auth.idToken;
+      final accessToken = auth.accessToken;
+      final serverAuthCode = account.serverAuthCode;
+
+      if (idToken != null || accessToken != null) {
+        try {
+          final res = await _dio.post<dynamic>(
+            '${Api.baseUrl}${Api.googleVerify}',
+            data: {
+              if (idToken != null) 'id_token': idToken,
+              if (accessToken != null) 'access_token': accessToken,
+              if (serverAuthCode != null) 'server_auth_code': serverAuthCode,
+            },
+            options: Options(
+              receiveTimeout: const Duration(seconds: 15),
+              sendTimeout: const Duration(seconds: 15),
+            ),
+          );
+          final data =
+              res.data is Map ? Map<String, dynamic>.from(res.data as Map) : null;
+          final access = data?['access_token'] as String?;
+          final refresh = data?['refresh_token'] as String?;
+          if (access != null) {
+            return await signInWithTokens(access: access, refresh: refresh);
+          }
+        } on DioException catch (dioErr) {
+          // If the backend has not deployed /auth/google/verify yet (e.g. 404), fallback to browser
+          if (dioErr.response?.statusCode == 404) {
+            return await _signInWithGoogleBrowser();
+          }
+          throw ApiException.from(dioErr);
+        }
+      }
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      final s = e.toString().toLowerCase();
+      if (s.contains('cancel') ||
+          s.contains('sign_in_canceled') ||
+          s.contains('canceled')) {
+        throw const ApiException('Sign-in was cancelled.');
+      }
+      // If native SDK encounters platform issue (e.g. non-Play emulator), fallback to browser
+      return await _signInWithGoogleBrowser();
+    }
+
+    return await _signInWithGoogleBrowser();
+  }
+
+  /// Browser-based OAuth fallback using Custom Tabs / FlutterWebAuth2.
+  Future<UserPost?> _signInWithGoogleBrowser() async {
     final url = await _resolveLoginUrl();
     final String result;
     try {
