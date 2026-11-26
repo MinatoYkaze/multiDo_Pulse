@@ -23,11 +23,6 @@ class Api {
   // Auth
   static const googleLogin = '/auth/google/login';
   static const googleCallback = '/auth/google/callback';
-  static const googleVerify = '/auth/google/verify';
-  static const googleServerClientId = String.fromEnvironment(
-    'GOOGLE_SERVER_CLIENT_ID',
-    defaultValue: '799034700511-d9qlkb3vop8ecotchs5ctk2kkci22ngb.apps.googleusercontent.com',
-  );
   static const refresh = '/auth/refresh';
   static const me = '/auth/me';
   static const logout = '/auth/Logout'; // capital L, as in the spec

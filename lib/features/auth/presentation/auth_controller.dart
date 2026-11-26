@@ -8,7 +8,6 @@ import '../data/auth_repository.dart';
 final authRepositoryProvider = Provider<AuthRepository>((ref) => AuthRepository(
       ref.watch(apiClientProvider),
       ref.watch(tokenStorageProvider),
-      ref.watch(dioProvider),
       ref.watch(offlineCacheProvider),
     ));
 
