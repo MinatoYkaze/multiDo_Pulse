@@ -74,7 +74,23 @@ class ApiException implements Exception {
           );
       }
     }
-    return ApiException(error.toString());
+    final raw = error.toString();
+    if (raw.toLowerCase().contains('unreachable')) {
+      return const ApiException(
+          'Unable to reach server. Please check your internet connection.');
+    }
+    if (raw.toLowerCase().contains('cancel')) {
+      return const ApiException('Sign-in was cancelled.');
+    }
+    if (raw.startsWith('PlatformException(')) {
+      final match = RegExp(r'PlatformException\([^,]+,\s*([^,]+),').firstMatch(raw);
+      final msg = match?.group(1)?.trim();
+      if (msg != null && msg != 'null' && msg.isNotEmpty) {
+        return ApiException(msg);
+      }
+      return const ApiException('Authentication service encountered a network error. Please check your connection.');
+    }
+    return ApiException(raw);
   }
 
   @override

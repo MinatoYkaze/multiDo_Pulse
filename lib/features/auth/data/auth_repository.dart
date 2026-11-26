@@ -78,9 +78,11 @@ class AuthRepository {
     return devUser;
   }
 
-  /// Opens the backend Google OAuth endpoint directly so browser cookies and redirects stay aligned.
+  /// Opens the backend Google OAuth endpoint directly with mobile callback scheme.
   Future<Uri> _resolveLoginUrl() async {
-    return Uri.parse('${Api.baseUrl}${Api.googleLogin}');
+    return Uri.parse('${Api.baseUrl}${Api.googleLogin}').replace(queryParameters: {
+      'redirect_url': '${Api.callbackScheme}://auth',
+    });
   }
 
   /// Full Google OAuth round-trip through the browser.
